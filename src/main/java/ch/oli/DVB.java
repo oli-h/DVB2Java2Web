@@ -1,13 +1,23 @@
 package ch.oli;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.BitSet;
 
 public class DVB {
 
     private static final byte[] buf = new byte[188 * 10]; // room for N packets (each has 188 bytes)
-    private static final BitSet pmtPIDs = new BitSet(8192); // we must learn which PIDs are to be decoded as PMT
+
+    private static final byte PID_CONTENT_PMT       = 1;
+    private static final byte PID_CONTENT_EMM       = 9;
+    private static final byte PID_CONTENT_MP2VIDEO  = 21;
+    private static final byte PID_CONTENT_VIDEO     = 22;
+    private static final byte PID_CONTENT_MP2AUDIO  = 31;
+    private static final byte PID_CONTENT_MHP_DESCR = 50;
+    private static final byte PID_CONTENT_AC3_AUDIO = 61;
+    private static final byte PID_CONTENT_TELETEXT  = 62;
+    private static final byte[] pidContent = new byte[8192];
+
     private static final MyBAOS[] payloadUnitBuffers = new MyBAOS[8192]; // buffer for each possible PID for reassembly
     private static final int[] lastContCounter = new int[8192]; // Continuity counter for each possoble PID
 //    private static OutputStream fos;
@@ -16,48 +26,60 @@ public class DVB {
 //        fos = new FileOutputStream("video.h264");
 
         // use:  dvbv5-zap -rP "ZDF HD"
-//        InputStream is = new FileInputStream("/dev/dvb/adapter0/dvr0");
-        InputStream is = new FileInputStream("/home/oli/Desktop/2007_20211028072500.mpg");
+        InputStream is = new FileInputStream("/dev/dvb/adapter0/dvr0");
+//        InputStream is = new FileInputStream("/home/oli/Desktop/2007_20211028072500.mpg");
+        BufferedInputStream bis = new BufferedInputStream(is);
 
         int count = 0;
         long t0 = System.nanoTime();
+        boolean inSync = false;
         while (true) {
-            int read = is.read(buf);
-            if (read < 0) {
+
+            if (!inSync) {
+                System.out.println("ERROR: not in-sync with 0x47");
+                while (true) {
+                    bis.mark(189);
+                    int sync1 = bis.read();
+                    if (sync1 != 0x47) {
+                        continue;
+                    }
+                    bis.skip(187);
+                    int sync2 = bis.read();
+                    bis.reset();
+                    if (sync2 != 0x47) {
+                        bis.skip(1);
+                        continue;
+                    }
+                    break;
+                }
+                inSync = true;
+            }
+
+            int read = bis.readNBytes(buf,0, buf.length);
+            if (read == 0) {
                 break;
             }
             count += read;
+//            System.out.println(count);
             long nanos = System.nanoTime() - t0;
             long bytesPreSecond = count * 1_000_000_000L / nanos;
 //            System.out.println(read + ": " + bytesPreSecond * 8 / 1000 / 1000.0 + " MBit/s");
-            int syncIndex = -1;
-            for (int i = 0; i < 188; i++) {
-                if (buf[i] == 0x47) {
-                    syncIndex = i;
+
+            for (int i = 0; i < read; i += 188) {
+                if (buf[i] != 0x47) {
+                    inSync = false;
                     break;
                 }
-            }
-            if (syncIndex < 0) {
-                System.out.println("ERROR: no sync 0x47 found");
-                continue;
-            }
-
-            for (int i = 0; syncIndex <= buf.length - 188; syncIndex += 188) {
-//                hexDump(Arrays.copyOfRange(buf, syncIndex, syncIndex + 188));
+//                hexDump(Arrays.copyOfRange(buf, i, i + 188));
 //                System.out.println();
-                PacketReader pr = new PacketReader(buf, syncIndex, 188);
-                decodePacket(pr);
+                try {
+                    PacketReader pr = new PacketReader(buf, i, 188);
+                    decodePacket(pr);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    inSync = false;
+                }
             }
-
-//            for (int i = 0; i < 188; i++) {
-//                System.out.format("%02X", buf[syncIndex + i] & 0xFF);
-//                count++;
-//                if (count % 88 == 0) {
-//                    System.out.println();
-//                    System.out.print(count+": ");
-//                }
-//            }
-//            System.out.println();
         }
     }
 
@@ -68,8 +90,7 @@ public class DVB {
     public static void decodePacket(PacketReader pr) {
         // see https://en.wikipedia.org/wiki/MPEG_transport_stream#Packet
         if (pr.pull8() != 0x47) {
-            System.out.println("ERROR: Sync 0x47 not found - ignoring packet");
-            return; // silently ignore packets with wrong sync-byte
+            throw new RuntimeException("ERROR: Sync 0x47 not found - desync detected - need to do a resync");
         }
         int tmp = pr.pull16();
         int pid = tmp & 0x1FFF;            // Packet Identifier, describing the payload data
@@ -77,7 +98,7 @@ public class DVB {
             return; // silently ignore Null-Packets
         }
         boolean tei  = (tmp & 0x8000) > 0; // Transport error indicator
-        if (pid == 0x1FFF || tei) {
+        if (tei) {
             System.out.println("ERROR: Transport error indicator");
             return; // ignore packets with transport errors
         }
@@ -92,16 +113,16 @@ public class DVB {
 
         // Check "Continuity counter"
         int lastCC = lastContCounter[pid];
+        lastContCounter[pid] = 16 + cc; // +16 to move away from zero to show 'already seen'
         int expectCC = (lastCC + (hasPayload ? 1 : 0)) & 15;
         if (lastCC > 0 && cc != expectCC) {
             System.out.format("ERROR: Continuity counter mismatch (expect %d but was %d) --> drop current reassembly for PID %d\n", expectCC, cc, pid);
             payloadUnitBuffers[pid] = null;
             return;
         }
-        lastContCounter[pid] = 16 + cc; // +16 to move away from zero to show 'already seen'
 
         // fast filter
-//        if (pid != 0) {
+//        if (pid > 1) {
 //            return;
 //        }
 //        if (pid != 16 && pid != 17 && pid != 0) {
@@ -172,10 +193,19 @@ public class DVB {
     private static void decodePayloadUnit(int pid, PacketReader prPU) {
 //        boolean isPSI = (pid == 0 || pid == 16 || pid == 17);
         boolean isPSI = (pid < 32); // simplified "all lower PIDs" to not handle each potential PID individually
-        if (isPSI || pmtPIDs.get(pid)) {
+        if (isPSI || pidContent[pid] == PID_CONTENT_PMT) {
             decodePSI(prPU, pid);
             return;
         }
+        if (pidContent[pid] == PID_CONTENT_EMM) {
+            System.out.print(" EMM-Message --> ignore");
+            return;
+        }
+        if(pidContent[pid] == PID_CONTENT_MHP_DESCR) {
+            System.out.print(" MHP/HbbTV-Message --> ignore");
+            return;
+        }
+
         decodePES(prPU);
     }
 
@@ -221,17 +251,18 @@ public class DVB {
             if (table_id == 0x00) {
                 decodePAT(prSection, table_id ,something);
             }
-
+            // in PID 1: Conditional Access Table (CAT)
+            else if (table_id == 0x01) { // conditional_access_section"
+                decodeCAT(prSection, table_id, something);
+            }
             // in PID 16: Network Information Table (NIT)
             else if (table_id == 0x40 || table_id == 0x41) { // actual_network (0x40) or other_network 0x41
                 decodeNIT(prSection, table_id, something);
             }
-
             // in PID 17: Service Description Table (SDT)
             else if (table_id == 0x42 || table_id == 0x46) { // actual_transport_stream (0x42) or other_transport_stream (0x46)
                 decodeSDT(prSection, table_id, something);
             }
-
             // in some PID: Program Map Table (PMT)
             else if (table_id == 0x02) { // program_map_section
                 decodePMT(prSection, table_id, something);
@@ -246,7 +277,7 @@ public class DVB {
             int program = prSection.pull16();
             int pmtPID = prSection.pull16() & 0x1FFF;
             System.out.format(" Prog:%d->PMT-PID:%d", program, pmtPID);
-            pmtPIDs.set(pmtPID);
+            pidContent[pmtPID] = PID_CONTENT_PMT;
         }
 
 //        int crc32 = 0xffffffff;
@@ -266,6 +297,19 @@ public class DVB {
 //        }
 //        // crc32 must be zero
 //        System.out.printf(" ----------- %08x ----------- ", crc32);
+    }
+
+    private static void decodeCAT(PacketReader prSection, int table_id, int something) {
+        System.out.printf(" CAT:");
+        while (prSection.remain() > 4) {
+            int MPEG_DescriptorTag = prSection.pull8();
+            int descriptor_length = prSection.pull8();
+            PacketReader prDescriptor = prSection.nextBytesAsPR(descriptor_length);
+            int CA_system_ID = prDescriptor.pull16();
+            int CA_PID = prDescriptor.pull16() & 0x1FFF;
+            System.out.format(" CA_system_ID:%04X->EMM-PID:%d", CA_system_ID, CA_PID);
+            pidContent[CA_PID] = PID_CONTENT_EMM;
+        }
     }
 
     private static void decodeNIT(PacketReader prSection, int table_id, int something) {
@@ -387,11 +431,17 @@ public class DVB {
             PacketReader prProgramInfo = prSection.nextBytesAsPR(program_info_length);
         }
         while (prSection.remain() > 4) {
-            int stream_type = prSection.pull8();
+            int stream_type = prSection.pull8(); // 2=mpeg2video 3=mpeg2audio 6=subtitle/teletext
             int elementary_PID = prSection.pull16() & 0x1FFF;
             int ES_info_length = prSection.pull16() & 0xFFF;
             prSection.nextBytesAsPR(ES_info_length);
             System.out.format(" %02x->%d", stream_type, elementary_PID);
+            switch (stream_type) {
+                case 0x1b: pidContent[elementary_PID] = PID_CONTENT_VIDEO    ; break;
+                case 0x02: pidContent[elementary_PID] = PID_CONTENT_MP2VIDEO ; break;
+                case 0x03: pidContent[elementary_PID] = PID_CONTENT_MP2AUDIO ; break;
+                case 0x05: pidContent[elementary_PID] = PID_CONTENT_MHP_DESCR; break;
+            }
         }
     }
 
@@ -404,7 +454,7 @@ public class DVB {
         int prefixHi = prPU.pull16();
         int prefixLo = prPU.pull8();
         if (prefixHi != 0 || prefixLo != 1) {
-            System.out.print("ERROR: PES not correct prefix - expect 0x000001");
+            System.out.print(" ERROR: PES not correct prefix - expect 0x000001");
             return;
         }
         int streamId       = prPU.pull8(); // Audio streams (0xC0-0xDF), Video streams (0xE0-0xEF)
