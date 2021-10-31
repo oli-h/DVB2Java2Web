@@ -184,7 +184,7 @@ public class DVB {
         }
     }
 
-    private static void hexDump(byte[] data) {
+    public static void hexDump(byte[] data) {
         for (int i = 0; i < data.length; i++) {
             System.out.format("%02X", data[i] & 0xFF);
         }
@@ -194,6 +194,8 @@ public class DVB {
 //        boolean isPSI = (pid == 0 || pid == 16 || pid == 17);
         boolean isPSI = (pid < 32); // simplified "all lower PIDs" to not handle each potential PID individually
         if (isPSI || pidContent[pid] == PID_CONTENT_PMT) {
+            int payloadPointer = prPU.pull8();
+            prPU.skip(payloadPointer);
             decodePSI(prPU, pid);
             return;
         }
@@ -214,10 +216,8 @@ public class DVB {
      * Transferred in PID 0 (PAT), PID 16 (NIT, ST), PID 17 (SDT, BAT, ST), PID 18 (EIT, ST, CIT)
      * and some others
      */
-    private static void decodePSI(PacketReader prPU, int pid) {
+    public static void decodePSI(PacketReader prPU, int pid) {
         // https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.16.01_60/en_300468v011601p.pdf
-        int payloadPointer = prPU.pull8();
-        prPU.skip(payloadPointer);
 
 //            hexDump(prPU.wholePacket());
 //            System.out.println();

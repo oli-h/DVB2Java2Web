@@ -21,7 +21,7 @@ public class IoctlBase {
 //    public static final long FE_SET_FRONTEND = (_IOC_WRITE << _IOC_DIRSHIFT) | ('o' << _IOC_TYPESHIFT) | (76L << _IOC_NRSHIFT) | (36L << _IOC_SIZESHIFT);
 //    public static final long FE_GET_FRONTEND = (_IOC_READ  << _IOC_DIRSHIFT) | ('o' << _IOC_TYPESHIFT) | (77L << _IOC_NRSHIFT) | (36L << _IOC_SIZESHIFT);
 
-    private final byte[] buf;
+    protected final byte[] buf;
 
     protected IoctlBase(int size) {
         // 'size' is to be reengineered from C-struct-sizes
@@ -56,6 +56,11 @@ public class IoctlBase {
         buf[idx + 1] = (byte) (value >>  8);
         buf[idx + 2] = (byte) (value >> 16);
         buf[idx + 3] = (byte) (value >> 24);
+    }
+
+    protected void int16(int idx, short value) {
+        buf[idx    ] = (byte)  value       ;
+        buf[idx + 1] = (byte) (value >>  8);
     }
 
     protected String string(int idx, int length) {
