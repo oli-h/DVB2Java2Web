@@ -27,6 +27,6 @@ public class dmx_sct_filter_params extends IoctlBase {
         int32(56, flags);
 
         final int DMX_SET_FILTER = 43;
-        doIoctl(fdDemux, DIR.write, DMX_SET_FILTER);
+        doIoctl(fdDemux, DIR.write, DMX_SET_FILTER, buf);
     }
 }

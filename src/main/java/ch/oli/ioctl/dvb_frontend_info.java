@@ -60,7 +60,7 @@ public class dvb_frontend_info extends IoctlBase {
 
     public void getViaIoctl(int fdFrontend) {
         int FE_GET_INFO = 61;
-        doIoctl(fdFrontend, DIR.read, FE_GET_INFO);
+        doIoctl(fdFrontend, DIR.read, FE_GET_INFO, buf);
 
         name                  = string( 0, 128);
         feType = FeType.values()[int32( 128)];

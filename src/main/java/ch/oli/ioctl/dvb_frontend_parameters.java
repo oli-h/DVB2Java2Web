@@ -56,7 +56,7 @@ public class dvb_frontend_parameters extends IoctlBase {
         int32(16, modulation .ordinal());
 
         final int FE_SET_FRONTEND = 76;
-        doIoctl(fdFrontend, DIR.write, FE_SET_FRONTEND);
+        doIoctl(fdFrontend, DIR.write, FE_SET_FRONTEND, buf);
     }
 
 //    public void readViaIoctl(int fdFrontend) {

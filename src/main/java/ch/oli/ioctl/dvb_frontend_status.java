@@ -21,7 +21,7 @@ public class dvb_frontend_status extends IoctlBase {
 
     public void getViaIoctl(int fdFrontend) {
         int FE_READ_STATUS = 69;
-        doIoctl(fdFrontend, DIR.read, FE_READ_STATUS);
+        doIoctl(fdFrontend, DIR.read, FE_READ_STATUS, buf);
         status = int32(0);
     }
 

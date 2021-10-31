@@ -33,7 +33,14 @@ public class IoctlBase {
      * @param dir 0=none, 1=read, 2=write, 3=read/write
      * @param nr  the IOCTL-NUmber
      */
-    protected void doIoctl(int fd, DIR dir, int nr) {
+    protected void doIoctl(int fd, DIR dir, int nr, Object value) {
+        if (dir == DIR.none && buf.length > 0) {
+            throw new RuntimeException("Hm? buf.length shall be 0 when dir is  'none");
+        }
+        if (dir != DIR.none && buf.length == 0) {
+            throw new RuntimeException("Hm? buf.length shall nto be 0 when dir is '" + dir + "");
+        }
+
         // see https://www.kernel.org/doc/html/latest/userspace-api/ioctl/ioctl-number.html
         // 'o' is for all DVB-Stuff
         long request =              dir.ordinal();
@@ -41,7 +48,7 @@ public class IoctlBase {
         request = (request <<  8) | 'o'          ;
         request = (request <<  8) | nr           ;
 
-        int ioctl = LibC.x.ioctl(fd, request, buf);
+        int ioctl = LibC.x.ioctl(fd, request, value);
         if (ioctl != 0) {
             errnoToException();
         }

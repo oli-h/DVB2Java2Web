@@ -12,5 +12,5 @@ public interface LibC extends Library  {
 //    int open(String filename,int flags);
 
     // void printf(String format, Object... args);
-    int ioctl(int fd, long request, byte[] buf);
+    int ioctl(int fd, long request, Object value);
 }

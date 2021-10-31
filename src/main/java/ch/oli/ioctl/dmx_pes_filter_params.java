@@ -108,7 +108,7 @@ public class dmx_pes_filter_params extends IoctlBase {
         int32(16, flags             );
 
         final int DMX_SET_PES_FILTER = 44;
-        doIoctl(fdDemux, DIR.write, DMX_SET_PES_FILTER);
+        doIoctl(fdDemux, DIR.write, DMX_SET_PES_FILTER, buf);
     }
 
 }

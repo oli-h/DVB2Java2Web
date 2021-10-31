@@ -4,6 +4,7 @@ import ch.oli.DVB;
 import ch.oli.PacketReader;
 
 import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
@@ -78,33 +79,58 @@ public class IoctlTest {
         try (RandomAccessFile fileDemux = new RandomAccessFile("/dev/dvb/adapter0/demux0", "r")) {
             int fdDemux = (int) FIELD_FD.get(fileDemux.getFD());
 
-//            dmx_pes_filter_params dmxPes = new dmx_pes_filter_params();
-//            dmxPes.pid = 0x2000;
-//            dmxPes.input = dmx_pes_filter_params.dmx_input.DMX_IN_FRONTEND;
-//            dmxPes.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
-//            dmxPes.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_VIDEO0;
-//            dmxPes.flags = 5;
-//            dmxPes.setViaIoctl(fdDemux);
+            dmx_set_buffer_size dmxSb = new dmx_set_buffer_size();
+            dmxSb.size = 65_536;
+            dmxSb.setViaIoctl(fdDemux);
 
-            dmx_sct_filter_params dmxSct = new dmx_sct_filter_params();
-            dmxSct.pid = 292;
-            dmxSct.flags = 5;
-            dmxSct.timeout = 1000;
-            dmxSct.setViaIoctl(fdDemux);
-            byte[] buf = new byte[100_000];
-            try {
-                for (int i = 0; i < 1000; i++) {
+            dmx_pes_filter_params dmxPes = new dmx_pes_filter_params();
+            dmxPes.pid = 272;
+            dmxPes.input = dmx_pes_filter_params.dmx_input.DMX_IN_FRONTEND;
+            dmxPes.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
+            dmxPes.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_OTHER;
+            dmxPes.flags = 5;
+            dmxPes.setViaIoctl(fdDemux);
+
+//            dmx_sct_filter_params dmxSct = new dmx_sct_filter_params();
+//            dmxSct.pid = 292;
+//            dmxSct.flags = 5;
+//            dmxSct.timeout = 1000;
+//            dmxSct.setViaIoctl(fdDemux);
+
+            byte[] buf = new byte[10_000];
+            FileOutputStream fos = new FileOutputStream("video.h264");
+//            FileOutputStream fos = new FileOutputStream("audio.mp2a");
+
+
+//            while (true) {
+//                while (fileDemux.readByte() != 0) {
+//                }
+//                if (fileDemux.readByte() == 0) {
+//                    if (fileDemux.readByte() == 0) {
+//                        if (fileDemux.readByte() == 1) {
+//                            fos.write(0);
+//                            fos.write(0);
+//                            fos.write(0);
+//                            fos.write(1);
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+            for (int i = 0; i < 1_000_000; i++) {
+                try {
                     int read = fileDemux.read(buf);
                     System.out.print(read + ": ");
+                    fos.write(buf,0,read);
                     PacketReader prPU = new PacketReader(buf, 0, read);
-//                    DVB.hexDump(Arrays.copyOfRange(buf, 0, read));
-//                    System.out.println();
-                    DVB.decodePSI(prPU, dmxSct.pid);
+//                    DVB.hexDump(Arrays.copyOfRange(buf, 0, Math.min(read, 100)));
                     System.out.println();
+//                    DVB.decodePSI(prPU, dmxSct.pid);
+//                    System.out.println();
+                } catch (IOException ex) {
+                    // nothing received
+                    ex.printStackTrace();
                 }
-            } catch (IOException ex) {
-                // nothing received
-                ex.printStackTrace();
             }
         }
     }
