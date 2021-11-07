@@ -5,13 +5,13 @@ public class dvb_frontend_parameters extends IoctlBase {
         super(36);
     }
 
-    enum dvbfe_spectral_inversion {
+    public enum dvbfe_spectral_inversion {
         DVBFE_INVERSION_OFF,
         DVBFE_INVERSION_ON,
         DVBFE_INVERSION_AUTO
     }
 
-    enum dvbfe_code_rate {
+    public enum dvbfe_code_rate {
         DVBFE_FEC_NONE,
         DVBFE_FEC_1_2,
         DVBFE_FEC_2_3,
@@ -24,7 +24,7 @@ public class dvb_frontend_parameters extends IoctlBase {
         DVBFE_FEC_AUTO
     }
 
-    enum fe_modulation {
+    public enum fe_modulation {
         QPSK,
         QAM_16,
         QAM_32,

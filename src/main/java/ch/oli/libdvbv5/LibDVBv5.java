@@ -1,18 +1,49 @@
 package ch.oli.libdvbv5;
 
 import com.sun.jna.*;
+import com.sun.jna.ptr.IntByReference;
 
 public interface LibDVBv5 extends Library {
     LibDVBv5 INSTANCE = Native.load("dvbv5", LibDVBv5.class);
 
     dvb_v5_fe_parms dvb_fe_open(int adapter, int frontend, int verbose, int use_legacy_call);
+    int dvb_set_sys(dvb_v5_fe_parms parms, fe_delivery_system sys);
 
-    @Structure.FieldOrder(
-            {
-                    "info", "version", "has_v5_stats", "current_sys", "num_systems", "systems", "legacy_fe", "abort",
-                    "lna", "lnb", "sat_number", "freq_bpf", "diseqc_wait", "verbose", "logfunc", "default_charset", "output_charset"
-            }
-    )
+    /* DVBv5 property Commands */
+    int DTV_UNDEFINED           =0 ;
+    int DTV_TUNE                =1 ;
+    int DTV_CLEAR               =2 ;
+    int DTV_FREQUENCY           =3 ;
+    int DTV_MODULATION          =4 ;
+    int DTV_BANDWIDTH_HZ        =5 ;
+    int DTV_INVERSION           =6 ;
+    int DTV_DISEQC_MASTER       =7 ;
+    int DTV_SYMBOL_RATE         =8 ;
+    int DTV_INNER_FEC           =9 ;
+    int DTV_VOLTAGE             =10;
+    int DTV_TONE                =11;
+    int DTV_PILOT               =12;
+    int DTV_ROLLOFF             =13;
+    int DTV_DISEQC_SLAVE_REPLY  =14;
+    int dvb_fe_store_parm(dvb_v5_fe_parms parms, int cmd, int value);
+    int dvb_fe_set_parms(dvb_v5_fe_parms parms);
+    int dvb_fe_get_stats(dvb_v5_fe_parms parms);
+
+    /* Quality parameters */
+    int DTV_STAT_SIGNAL_STRENGTH        = 62;
+    int DTV_STAT_CNR                    = 63;
+    int DTV_STAT_PRE_ERROR_BIT_COUNT    = 64;
+    int DTV_STAT_PRE_TOTAL_BIT_COUNT    = 65;
+    int DTV_STAT_POST_ERROR_BIT_COUNT   = 66;
+    int DTV_STAT_POST_TOTAL_BIT_COUNT   = 67;
+    int DTV_STAT_ERROR_BLOCK_COUNT      = 68;
+    int DTV_STAT_TOTAL_BLOCK_COUNT      = 69;
+    int dvb_fe_retrieve_stats(dvb_v5_fe_parms parms, int cmd, IntByReference value);
+
+    @Structure.FieldOrder({
+            "info", "version", "has_v5_stats", "current_sys", "num_systems", "systems", "legacy_fe", "abort",
+            "lna", "lnb", "sat_number", "freq_bpf", "diseqc_wait", "verbose", "logfunc", "default_charset", "output_charset"
+    })
     class dvb_v5_fe_parms extends Structure {
 
         public dvb_frontend_info info;
@@ -46,8 +77,10 @@ public interface LibDVBv5 extends Library {
         public String output_charset;
     }
 
-    @Structure.FieldOrder({"nameNative", "type", "frequency_min", "frequency_max", "frequency_stepsize", "frequency_tolerance", "symbol_rate_min",
-            "symbol_rate_max", "symbol_rate_tolerance", "notifier_delay", "caps"})
+    @Structure.FieldOrder({
+            "nameNative", "type", "frequency_min", "frequency_max", "frequency_stepsize", "frequency_tolerance", "symbol_rate_min",
+            "symbol_rate_max", "symbol_rate_tolerance", "notifier_delay", "caps"
+    })
     class dvb_frontend_info extends Structure {
         public byte[] nameNative = new byte[128];
         private String name;
