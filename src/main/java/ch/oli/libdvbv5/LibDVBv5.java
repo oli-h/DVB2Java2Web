@@ -231,8 +231,7 @@ public interface LibDVBv5 extends Library {
         SYS_DAB,
         SYS_DVBT2,
         SYS_TURBO,
-        SYS_DVBC_ANNEX_C,
-        ;
+        SYS_DVBC_ANNEX_C;
 
         @Override
         public Object fromNative(Object nativeValue, FromNativeContext context) {

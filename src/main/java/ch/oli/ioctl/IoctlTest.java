@@ -8,7 +8,6 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 
 public class IoctlTest {
 
@@ -43,8 +42,10 @@ public class IoctlTest {
     private static void tune(int freq) throws Exception {
         System.out.print("Tune to " + freq / 1000 / 1000.0 + " MHz : ");
 
+        LibDVBv5.fe_delivery_system delSys = LibDVBv5.fe_delivery_system.SYS_DVBC_ANNEX_A;
         int symbolRate = 6_900_000;
         dvb_frontend_parameters.fe_modulation modulation = dvb_frontend_parameters.fe_modulation.QAM_256;
+        dvb_frontend_parameters.dvbfe_spectral_inversion inversion = dvb_frontend_parameters.dvbfe_spectral_inversion.DVBFE_INVERSION_AUTO;
         dvb_frontend_parameters.dvbfe_code_rate fec = dvb_frontend_parameters.dvbfe_code_rate.DVBFE_FEC_NONE;
         if (freq >= 538_000_000 && freq <= 722_000_000) {
             symbolRate = 6_952_000;
@@ -60,13 +61,13 @@ public class IoctlTest {
         long t0 = System.currentTimeMillis();
 
         dtv_properties dtvprops = new dtv_properties();
-        dtvprops.addCmd(LibDVBv5.DTV_DELIVERY_SYSTEM, LibDVBv5.fe_delivery_system.SYS_DVBC_ANNEX_A                         .ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_FREQUENCY      , freq                                                                           );
-        dtvprops.addCmd(LibDVBv5.DTV_SYMBOL_RATE    , symbolRate                                                                     );
-        dtvprops.addCmd(LibDVBv5.DTV_MODULATION     , modulation.ordinal()                                                           );
-        dtvprops.addCmd(LibDVBv5.DTV_INVERSION      , dvb_frontend_parameters.dvbfe_spectral_inversion.DVBFE_INVERSION_AUTO.ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_INNER_FEC      , fec                                                                  .ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_TUNE           , 0                                                                         );
+        dtvprops.addCmd(LibDVBv5.DTV_DELIVERY_SYSTEM, delSys    .ordinal());
+        dtvprops.addCmd(LibDVBv5.DTV_FREQUENCY      , freq                );
+        dtvprops.addCmd(LibDVBv5.DTV_SYMBOL_RATE    , symbolRate          );
+        dtvprops.addCmd(LibDVBv5.DTV_MODULATION     , modulation.ordinal());
+        dtvprops.addCmd(LibDVBv5.DTV_INVERSION      , inversion .ordinal());
+        dtvprops.addCmd(LibDVBv5.DTV_INNER_FEC      , fec       .ordinal());
+        dtvprops.addCmd(LibDVBv5.DTV_TUNE           , 0              );
         dtvprops.setViaIoctl(fdFrontend);
 
         dtvprops.clear();

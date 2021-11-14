@@ -1,5 +1,6 @@
 package ch.oli.ioctl;
 
+import ch.oli.libdvbv5.LibDVBv5;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
 
@@ -8,7 +9,8 @@ public class dtv_properties extends Structure {
 
     public int num = 0;
     // using array (and not a pointer to a single instance) leads to a larger memory size
-    // as all pointers in the array are mapped to memory - not only the first one. But this still works
+    // as all pointers in the array are mapped to memory and not only the first one.
+    // But: this still works :-) as the kernel-driver only uses the first pointer
     public dtv_property[] props = (dtv_property[]) new dtv_property().toArray(16);
 
     // sizeof = 76
@@ -93,7 +95,7 @@ public class dtv_properties extends Structure {
     public void clear() {
         for (int i = 0; i < props.length; i++) {
             dtv_property prop = props[i];
-            prop.cmd = 0;
+            prop.cmd = LibDVBv5.DTV_UNDEFINED;
             prop.u.setType("data");
             prop.u.data = 0;
             prop.u.buffer = null;
