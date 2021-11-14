@@ -1,6 +1,5 @@
 package ch.oli.ioctl;
 
-import ch.oli.libdvbv5.LibDVBv5;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
 
@@ -63,9 +62,9 @@ public class dtv_properties extends Structure {
     /**
      * using the "data field" in the union
      */
-    public void addCmd(int cmd, int data) {
+    public void addCmd(C.CMD cmd, int data) {
         dtv_property prop = props[num++];
-        prop.cmd = cmd;
+        prop.cmd = cmd.ordinal();
         prop.u.setType("data");
         prop.u.data = data;
     }
@@ -73,9 +72,9 @@ public class dtv_properties extends Structure {
     /**
      * using the "buffer field" in the union
      */
-    public void addCmd(int cmd, byte[] buffer) {
+    public void addCmd(C.CMD cmd, byte[] buffer) {
         dtv_property prop = props[num++];
-        prop.cmd = cmd;
+        prop.cmd = cmd.ordinal();
         prop.u.setType("buffer");
         prop.u.buffer = new dtv_property.Buffer();
         prop.u.buffer.len = buffer.length;
@@ -85,9 +84,9 @@ public class dtv_properties extends Structure {
     /**
      * using the "st field" in the union
      */
-    public void addStatsCmd(int cmd) {
+    public void addStatsCmd(C.CMD cmd) {
         dtv_property prop = props[num++];
-        prop.cmd = cmd;
+        prop.cmd = cmd.ordinal();
         prop.u.setType("st");
         prop.u.st = new dtv_property.dtv_fe_stats();
     }
@@ -95,7 +94,7 @@ public class dtv_properties extends Structure {
     public void clear() {
         for (int i = 0; i < props.length; i++) {
             dtv_property prop = props[i];
-            prop.cmd = LibDVBv5.DTV_UNDEFINED;
+            prop.cmd = 0;
             prop.u.setType("data");
             prop.u.data = 0;
             prop.u.buffer = null;
@@ -109,11 +108,11 @@ public class dtv_properties extends Structure {
 //        System.out.println(this.toString(true));
 
         final int FE_SET_PROPERTY = 82;
-        new IoctlBase(16).doIoctl(fdFrontend, IoctlBase.DIR.write, FE_SET_PROPERTY, this);
+        C.ioctl(fdFrontend, C.DIR.write, FE_SET_PROPERTY, this);
     }
 
     public void getViaIoctrl(int fdFrontend) {
         final int FE_GET_PROPERTY = 83;
-        new IoctlBase(16).doIoctl(fdFrontend, IoctlBase.DIR.read, FE_GET_PROPERTY, this);
+        C.ioctl(fdFrontend, C.DIR.read, FE_GET_PROPERTY, this);
     }
 }

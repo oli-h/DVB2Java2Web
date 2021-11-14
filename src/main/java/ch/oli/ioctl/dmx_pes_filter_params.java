@@ -1,19 +1,33 @@
 package ch.oli.ioctl;
 
-public class dmx_pes_filter_params extends IoctlBase {
-    protected dmx_pes_filter_params() {
-        super(20);
-    }
+import com.sun.jna.FromNativeContext;
+import com.sun.jna.NativeMapped;
+import com.sun.jna.Structure;
 
+@Structure.FieldOrder({"pid", "input", "output", "pes_type", "flags"})
+public class dmx_pes_filter_params extends Structure {
     /**
      * enum dmx_input - Input from the demux.
      *
      * @DMX_IN_FRONTEND: Input from a front-end device.
      * @DMX_IN_DVR: Input from the logical DVR device.
      */
-    enum dmx_input {
-        DMX_IN_FRONTEND,
-        DMX_IN_DVR
+    enum dmx_input implements NativeMapped {
+        DMX_IN_FRONTEND, DMX_IN_DVR;
+        @Override
+        public Object fromNative(Object nativeValue, FromNativeContext context) {
+            return values()[(Integer) nativeValue];
+        }
+
+        @Override
+        public Object toNative() {
+            return this.ordinal();
+        }
+
+        @Override
+        public Class<?> nativeType() {
+            return Integer.class;
+        }
     }
 
     /**
@@ -29,11 +43,26 @@ public class dmx_pes_filter_params extends IoctlBase {
      * filters for which @DMX_OUT_TS_TAP was specified.
      * @DMX_OUT_TSDEMUX_TAP: Like @DMX_OUT_TS_TAP but retrieved from the DMX device.
      */
-    public enum dmx_output {
+    public enum dmx_output implements NativeMapped {
         DMX_OUT_DECODER,
         DMX_OUT_TAP,
         DMX_OUT_TS_TAP,
-        DMX_OUT_TSDEMUX_TAP
+        DMX_OUT_TSDEMUX_TAP;
+
+        @Override
+        public Object fromNative(Object nativeValue, FromNativeContext context) {
+            return values()[(Integer) nativeValue];
+        }
+
+        @Override
+        public Object toNative() {
+            return this.ordinal();
+        }
+
+        @Override
+        public Class<?> nativeType() {
+            return Integer.class;
+        }
     }
 
     /**
@@ -63,32 +92,27 @@ public class dmx_pes_filter_params extends IoctlBase {
      * @DMX_PES_OTHER:     any other PID.
      */
 
-    public enum dmx_ts_pes {
-        DMX_PES_AUDIO0,
-        DMX_PES_VIDEO0,
-        DMX_PES_TELETEXT0,
-        DMX_PES_SUBTITLE0,
-        DMX_PES_PCR0,
+    public enum dmx_ts_pes implements NativeMapped {
+        DMX_PES_AUDIO0, DMX_PES_VIDEO0, DMX_PES_TELETEXT0, DMX_PES_SUBTITLE0, DMX_PES_PCR0,
+        DMX_PES_AUDIO1, DMX_PES_VIDEO1, DMX_PES_TELETEXT1, DMX_PES_SUBTITLE1, DMX_PES_PCR1,
+        DMX_PES_AUDIO2, DMX_PES_VIDEO2, DMX_PES_TELETEXT2, DMX_PES_SUBTITLE2, DMX_PES_PCR2,
+        DMX_PES_AUDIO3, DMX_PES_VIDEO3, DMX_PES_TELETEXT3, DMX_PES_SUBTITLE3, DMX_PES_PCR3,
+        DMX_PES_OTHER;
 
-        DMX_PES_AUDIO1,
-        DMX_PES_VIDEO1,
-        DMX_PES_TELETEXT1,
-        DMX_PES_SUBTITLE1,
-        DMX_PES_PCR1,
+        @Override
+        public Object fromNative(Object nativeValue, FromNativeContext context) {
+            return values()[(Integer) nativeValue];
+        }
 
-        DMX_PES_AUDIO2,
-        DMX_PES_VIDEO2,
-        DMX_PES_TELETEXT2,
-        DMX_PES_SUBTITLE2,
-        DMX_PES_PCR2,
+        @Override
+        public Object toNative() {
+            return this.ordinal();
+        }
 
-        DMX_PES_AUDIO3,
-        DMX_PES_VIDEO3,
-        DMX_PES_TELETEXT3,
-        DMX_PES_SUBTITLE3,
-        DMX_PES_PCR3,
-
-        DMX_PES_OTHER
+        @Override
+        public Class<?> nativeType() {
+            return Integer.class;
+        }
     }
 
     public short pid;
@@ -98,14 +122,8 @@ public class dmx_pes_filter_params extends IoctlBase {
     public int flags;
 
     public void setViaIoctl(int fdDemux) {
-        int16( 0, pid               );
-        int32( 4, input.ordinal()   );
-        int32( 8, output.ordinal()  );
-        int32(12, pes_type.ordinal());
-        int32(16, flags             );
-
         final int DMX_SET_PES_FILTER = 44;
-        doIoctl(fdDemux, DIR.write, DMX_SET_PES_FILTER, buf);
+        C.ioctl(fdDemux, C.DIR.write, DMX_SET_PES_FILTER, this);
     }
 
 }

@@ -1,13 +1,34 @@
 package ch.oli.ioctl;
 
-public class dvb_frontend_info extends IoctlBase {
+import com.sun.jna.FromNativeContext;
+import com.sun.jna.NativeMapped;
+import com.sun.jna.Structure;
 
-    public dvb_frontend_info() {
-        super(168);
-    }
+@Structure.FieldOrder({
+        "name", "feType",
+        "frequency_min", "frequency_max", "frequency_stepsize", "frequency_tolerance",
+        "symbol_rate_min", "symbol_rate_max", "symbol_rate_tolerance",
+        "notifier_delay", "caps"
+})
+public class dvb_frontend_info extends Structure {
 
-    enum FeType {
-        FE_QPSK, FE_QAM, FE_OFDM, FE_ATSC
+    enum FeType implements NativeMapped {
+        FE_QPSK, FE_QAM, FE_OFDM, FE_ATSC;
+
+        @Override
+        public Object fromNative(Object nativeValue, FromNativeContext context) {
+            return values()[(Integer) nativeValue];
+        }
+
+        @Override
+        public Object toNative() {
+            return this.ordinal();
+        }
+
+        @Override
+        public Class<?> nativeType() {
+            return Integer.class;
+        }
     }
 
     public final static int FE_IS_STUPID = 0;
@@ -46,33 +67,21 @@ public class dvb_frontend_info extends IoctlBase {
         FE_CAN_MUTE_TS               , // 0x80000000
     }
 
-    public String name              ; // char[128]
-    public FeType feType            ;      /* DEPRECATED. Use DTV_ENUM_DELSYS instead */
-    public int frequency_min        ;
-    public int frequency_max        ;
-    public int frequency_stepsize   ;
-    public int frequency_tolerance  ;
-    public int symbol_rate_min      ;
-    public int symbol_rate_max      ;
-    public int symbol_rate_tolerance;
-    public int notifier_delay       ;              /* DEPRECATED */
-    public int caps                 ;
+    public byte[] name = new byte[128]; // char[128]
+    public FeType feType              ; // DEPRECATED. Use DTV_ENUM_DELSYS instead
+    public int frequency_min          ;
+    public int frequency_max          ;
+    public int frequency_stepsize     ;
+    public int frequency_tolerance    ;
+    public int symbol_rate_min        ;
+    public int symbol_rate_max        ;
+    public int symbol_rate_tolerance  ;
+    public int notifier_delay         ; // DEPRECATED
+    public int caps                   ;
 
     public void getViaIoctl(int fdFrontend) {
         int FE_GET_INFO = 61;
-        doIoctl(fdFrontend, DIR.read, FE_GET_INFO, buf);
-
-        name                  = string( 0, 128);
-        feType = FeType.values()[int32( 128)];
-        frequency_min         = int32(132);
-        frequency_max         = int32(136);
-        frequency_stepsize    = int32(140);
-        frequency_tolerance   = int32(144);
-        symbol_rate_min       = int32(148);
-        symbol_rate_max       = int32(152);
-        symbol_rate_tolerance = int32(156);
-        notifier_delay        = int32(160);
-        caps                  = int32(164);
+        C.ioctl(fdFrontend, C.DIR.read, FE_GET_INFO, this);
     }
 
 }

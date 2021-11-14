@@ -1,11 +1,9 @@
 package ch.oli.ioctl;
 
-public class dmx_sct_filter_params extends IoctlBase {
+import com.sun.jna.Structure;
 
-    protected dmx_sct_filter_params() {
-        super(60);
-    }
-
+@Structure.FieldOrder({"pid","filter","mask","mode","timeout","flags"})
+public class dmx_sct_filter_params extends Structure {
     // Used in flags
     public static final int DMX_CHECK_CRC       = 1; // only deliver sections where the CRC check succeeded
     public static final int DMX_ONESHOT         = 2; // disable the section filter after one section has been delivered
@@ -19,14 +17,7 @@ public class dmx_sct_filter_params extends IoctlBase {
     public int flags;
 
     public void setViaIoctl(int fdDemux) {
-        int16(0, pid);
-        System.arraycopy(filter, 0, buf,  4, 16);
-        System.arraycopy(mask  , 0, buf, 20, 16);
-        System.arraycopy(mode  , 0, buf, 36, 16);
-        int32(52, timeout);
-        int32(56, flags);
-
         final int DMX_SET_FILTER = 43;
-        doIoctl(fdDemux, DIR.write, DMX_SET_FILTER, buf);
+        C.ioctl(fdDemux, C.DIR.write, DMX_SET_FILTER, this);
     }
 }

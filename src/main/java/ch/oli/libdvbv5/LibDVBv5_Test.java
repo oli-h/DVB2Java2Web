@@ -1,6 +1,6 @@
 package ch.oli.libdvbv5;
 
-import ch.oli.ioctl.dvb_frontend_parameters;
+import ch.oli.ioctl.C;
 import com.sun.jna.ptr.IntByReference;
 
 import java.io.FileInputStream;
@@ -9,8 +9,8 @@ public class LibDVBv5_Test {
     public static void main(String[] args) throws Exception {
         final LibDVBv5 I = LibDVBv5.INSTANCE;
         DVBdev dvb = new DVBdev(0,0, 0);
-        dvb.setSys(LibDVBv5.fe_delivery_system.SYS_DVBC_ANNEX_A);
-        dvb.tune(426_000_000, 6_900_000, dvb_frontend_parameters.fe_modulation.QAM_64, dvb_frontend_parameters.dvbfe_spectral_inversion.DVBFE_INVERSION_ON, dvb_frontend_parameters.dvbfe_code_rate.DVBFE_FEC_NONE);
+        dvb.setSys(C.fe_delivery_system.SYS_DVBC_ANNEX_A);
+        dvb.tune(426_000_000, 6_900_000, C.fe_modulation.QAM_64, C.dvbfe_spectral_inversion.DVBFE_INVERSION_ON, C.dvbfe_code_rate.DVBFE_FEC_NONE);
 
         Thread.sleep(400);
 

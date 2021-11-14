@@ -1,10 +1,9 @@
 package ch.oli.ioctl;
 
-public class dvb_frontend_status extends IoctlBase {
+import com.sun.jna.Structure;
 
-    protected dvb_frontend_status() {
-        super(4);
-    }
+@Structure.FieldOrder("status")
+public class dvb_frontend_status extends Structure {
 
     public static final int FE_NONE = 0x00;
     enum fe_status {
@@ -21,8 +20,7 @@ public class dvb_frontend_status extends IoctlBase {
 
     public void getViaIoctl(int fdFrontend) {
         int FE_READ_STATUS = 69;
-        doIoctl(fdFrontend, DIR.read, FE_READ_STATUS, buf);
-        status = int32(0);
+        C.ioctl(fdFrontend, C.DIR.read, FE_READ_STATUS, this);
     }
 
 }

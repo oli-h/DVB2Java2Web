@@ -2,7 +2,6 @@ package ch.oli.ioctl;
 
 import ch.oli.decode.PacketDecoderDVB;
 import ch.oli.decode.PacketReader;
-import ch.oli.libdvbv5.LibDVBv5;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -25,6 +24,7 @@ public class IoctlTest {
 
         dvb_frontend_info fei = new dvb_frontend_info();
         fei.getViaIoctl(fdFrontend);
+        System.out.println("Frontend name: " + new String(fei.name));
         for (dvb_frontend_info.CAPS_BITS caps_bit : dvb_frontend_info.CAPS_BITS.values()) {
             if (((fei.caps >> caps_bit.ordinal()) & 1) > 0) {
                 System.out.println(caps_bit.name());
@@ -42,53 +42,58 @@ public class IoctlTest {
     private static void tune(int freq) throws Exception {
         System.out.print("Tune to " + freq / 1000 / 1000.0 + " MHz : ");
 
-        LibDVBv5.fe_delivery_system delSys = LibDVBv5.fe_delivery_system.SYS_DVBC_ANNEX_A;
-        int symbolRate = 6_900_000;
-        dvb_frontend_parameters.fe_modulation modulation = dvb_frontend_parameters.fe_modulation.QAM_256;
-        dvb_frontend_parameters.dvbfe_spectral_inversion inversion = dvb_frontend_parameters.dvbfe_spectral_inversion.DVBFE_INVERSION_AUTO;
-        dvb_frontend_parameters.dvbfe_code_rate fec = dvb_frontend_parameters.dvbfe_code_rate.DVBFE_FEC_NONE;
+        C.fe_delivery_system delSys = C.fe_delivery_system.SYS_DVBC_ANNEX_A;
+        int                        symbolRate = 6_900_000;
+        C.fe_modulation            modulation = C.fe_modulation.QAM_256;
+        C.dvbfe_spectral_inversion inversion  = C.dvbfe_spectral_inversion.DVBFE_INVERSION_AUTO;
+        C.dvbfe_code_rate          fec        = C.dvbfe_code_rate.DVBFE_FEC_NONE;
         if (freq >= 538_000_000 && freq <= 722_000_000) {
             symbolRate = 6_952_000;
         } else if (freq == 426_000_000) {
-            modulation = dvb_frontend_parameters.fe_modulation.QAM_64;
+            modulation = C.fe_modulation.QAM_64;
         } else if (freq < 100_000_000) {
             // try to lock on DOCSIS-Upstream-Channels --> No luck
             symbolRate = 5_120_000;
-            modulation = dvb_frontend_parameters.fe_modulation.QAM_64;
-            fec = dvb_frontend_parameters.dvbfe_code_rate.DVBFE_FEC_AUTO;
+            modulation = C.fe_modulation.QAM_64;
+            fec = C.dvbfe_code_rate.DVBFE_FEC_AUTO;
         }
 
         long t0 = System.currentTimeMillis();
 
-        dtv_properties dtvprops = new dtv_properties();
-        dtvprops.addCmd(LibDVBv5.DTV_DELIVERY_SYSTEM, delSys    .ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_FREQUENCY      , freq                );
-        dtvprops.addCmd(LibDVBv5.DTV_SYMBOL_RATE    , symbolRate          );
-        dtvprops.addCmd(LibDVBv5.DTV_MODULATION     , modulation.ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_INVERSION      , inversion .ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_INNER_FEC      , fec       .ordinal());
-        dtvprops.addCmd(LibDVBv5.DTV_TUNE           , 0              );
-        dtvprops.setViaIoctl(fdFrontend);
+//        dtv_properties dtvprops = new dtv_properties();
+//        dtvprops.addCmd(C.CMD.DTV_DELIVERY_SYSTEM, delSys    .ordinal());
+//        dtvprops.addCmd(C.CMD.DTV_FREQUENCY      , freq                );
+//        dtvprops.addCmd(C.CMD.DTV_SYMBOL_RATE    , symbolRate          );
+//        dtvprops.addCmd(C.CMD.DTV_MODULATION     , modulation.ordinal());
+//        dtvprops.addCmd(C.CMD.DTV_INVERSION      , inversion .ordinal());
+//        dtvprops.addCmd(C.CMD.DTV_INNER_FEC      , fec       .ordinal());
+//        dtvprops.addCmd(C.CMD.DTV_TUNE           , 0              );
+//        dtvprops.setViaIoctl(fdFrontend);
+//
+//        dtvprops.clear();
+//        dtvprops.addCmd(C.CMD.DTV_ENUM_DELSYS, new byte[0]);
+//        dtvprops.getViaIoctrl(fdFrontend);
 
-        dtvprops.clear();
-        dtvprops.addCmd(LibDVBv5.DTV_ENUM_DELSYS, new byte[0]);
-        dtvprops.getViaIoctrl(fdFrontend);
 
-
-//        dvb_frontend_parameters fep = new dvb_frontend_parameters();
-//        fep.frequency   = freq;
-//        fep.inversion   = dvb_frontend_parameters.dvbfe_spectral_inversion.DVBFE_INVERSION_AUTO;
-//        fep.symbol_rate = symbolRate;
-//        fep.fec_inner   = fec;
-//        fep.modulation  = modulation;
-//        fep.setViaIoctl(fdFrontend);
+        dvb_frontend_parameters fep = new dvb_frontend_parameters();
+        fep.frequency   = freq      ;
+        fep.inversion   = inversion ;
+        fep.symbol_rate = symbolRate;
+        fep.fec_inner   = fec       ;
+        fep.modulation  = modulation;
+        fep.setViaIoctl(fdFrontend);
 
         dvb_frontend_status dfs = new dvb_frontend_status();
         while (true) {
 //            dtvprops.clear();
-//            for (int cmd = LibDVBv5.DTV_STAT_SIGNAL_STRENGTH; cmd <= LibDVBv5.DTV_STAT_TOTAL_BLOCK_COUNT; cmd++) {
-//                dtvprops.addStatsCmd(cmd);
-//            }
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_SIGNAL_STRENGTH     );
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_CNR                 );
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_PRE_ERROR_BIT_COUNT );
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_PRE_TOTAL_BIT_COUNT );
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_POST_ERROR_BIT_COUNT);
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_POST_TOTAL_BIT_COUNT);
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_ERROR_BLOCK_COUNT   );
+//            dtvprops.addStatsCmd(C.CMD.DTV_STAT_TOTAL_BLOCK_COUNT   );
 //            dtvprops.getViaIoctrl(fdFrontend);
 //            for (int i = 0; i < 8; i++) {
 //                System.out.print(dtvprops.props[i].cmd + "=" + dtvprops.props[i].u.st.stat[0].value + " ");
