@@ -12,7 +12,19 @@ import com.sun.jna.Structure;
 })
 public class dvb_frontend_info extends Structure {
 
-    enum FeType implements NativeMapped {
+    public byte[] name = new byte[128]; // char[128]
+    public FeType feType              ; // DEPRECATED. Use DTV_ENUM_DELSYS instead
+    public int frequency_min          ;
+    public int frequency_max          ;
+    public int frequency_stepsize     ;
+    public int frequency_tolerance    ;
+    public int symbol_rate_min        ;
+    public int symbol_rate_max        ;
+    public int symbol_rate_tolerance  ;
+    public int notifier_delay         ; // DEPRECATED
+    public int caps                   ;
+
+    public enum FeType implements NativeMapped {
         FE_QPSK, FE_QAM, FE_OFDM, FE_ATSC;
 
         @Override
@@ -32,7 +44,7 @@ public class dvb_frontend_info extends Structure {
     }
 
     public final static int FE_IS_STUPID = 0;
-    enum CAPS_BITS {
+    public enum CAPS_BITS {
         FE_CAN_INVERSION_AUTO        , // 0x1
         FE_CAN_FEC_1_2               , // 0x2
         FE_CAN_FEC_2_3               , // 0x4
@@ -66,22 +78,4 @@ public class dvb_frontend_info extends Structure {
         FE_CAN_RECOVER               , // 0x40000000
         FE_CAN_MUTE_TS               , // 0x80000000
     }
-
-    public byte[] name = new byte[128]; // char[128]
-    public FeType feType              ; // DEPRECATED. Use DTV_ENUM_DELSYS instead
-    public int frequency_min          ;
-    public int frequency_max          ;
-    public int frequency_stepsize     ;
-    public int frequency_tolerance    ;
-    public int symbol_rate_min        ;
-    public int symbol_rate_max        ;
-    public int symbol_rate_tolerance  ;
-    public int notifier_delay         ; // DEPRECATED
-    public int caps                   ;
-
-    public void getViaIoctl(int fdFrontend) {
-        int FE_GET_INFO = 61;
-        C.ioctl(fdFrontend, C.DIR.read, FE_GET_INFO, this);
-    }
-
 }

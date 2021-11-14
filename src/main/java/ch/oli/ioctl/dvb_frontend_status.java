@@ -5,6 +5,8 @@ import com.sun.jna.Structure;
 @Structure.FieldOrder("status")
 public class dvb_frontend_status extends Structure {
 
+    public int status;
+
     public static final int FE_NONE = 0x00;
     enum fe_status {
         FE_HAS_SIGNAL  , // 0x01,
@@ -15,12 +17,5 @@ public class dvb_frontend_status extends Structure {
         FE_TIMEDOUT    , // 0x20,
         FE_REINIT      , // 0x40,
     };
-
-    public int status;
-
-    public void getViaIoctl(int fdFrontend) {
-        int FE_READ_STATUS = 69;
-        C.ioctl(fdFrontend, C.DIR.read, FE_READ_STATUS, this);
-    }
 
 }

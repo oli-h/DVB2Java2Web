@@ -6,6 +6,13 @@ import com.sun.jna.Structure;
 
 @Structure.FieldOrder({"pid", "input", "output", "pes_type", "flags"})
 public class dmx_pes_filter_params extends Structure {
+
+    public short      pid;
+    public dmx_input  input;
+    public dmx_output output;
+    public dmx_ts_pes pes_type;
+    public int        flags;
+
     /**
      * enum dmx_input - Input from the demux.
      *
@@ -113,17 +120,6 @@ public class dmx_pes_filter_params extends Structure {
         public Class<?> nativeType() {
             return Integer.class;
         }
-    }
-
-    public short pid;
-    public dmx_input  input;
-    public dmx_output output;
-    public dmx_ts_pes pes_type;
-    public int flags;
-
-    public void setViaIoctl(int fdDemux) {
-        final int DMX_SET_PES_FILTER = 44;
-        C.ioctl(fdDemux, C.DIR.write, DMX_SET_PES_FILTER, this);
     }
 
 }

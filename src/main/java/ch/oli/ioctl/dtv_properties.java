@@ -5,12 +5,12 @@ import com.sun.jna.Union;
 
 @Structure.FieldOrder({"num", "props"})
 public class dtv_properties extends Structure {
+    // this array finall is sequential in native memory
+    // private = not mapped. Mapping is done via next property "props"
+    private dtv_property[] propsArray = (dtv_property[]) new dtv_property().toArray(16);
 
-    public int num = 0;
-    // using array (and not a pointer to a single instance) leads to a larger memory size
-    // as all pointers in the array are mapped to memory and not only the first one.
-    // But: this still works :-) as the kernel-driver only uses the first pointer
-    public dtv_property[] props = (dtv_property[]) new dtv_property().toArray(16);
+    public int          num   = 0            ;
+    public dtv_property props = propsArray[0]; // native only needs pointer to first element of array
 
     // sizeof = 76
     @Structure.FieldOrder({"cmd", "reserved1", "u", "result"})
@@ -63,7 +63,7 @@ public class dtv_properties extends Structure {
      * using the "data field" in the union
      */
     public void addCmd(C.CMD cmd, int data) {
-        dtv_property prop = props[num++];
+        dtv_property prop = propsArray[num++];
         prop.cmd = cmd.ordinal();
         prop.u.setType("data");
         prop.u.data = data;
@@ -73,7 +73,7 @@ public class dtv_properties extends Structure {
      * using the "buffer field" in the union
      */
     public void addCmd(C.CMD cmd, byte[] buffer) {
-        dtv_property prop = props[num++];
+        dtv_property prop = propsArray[num++];
         prop.cmd = cmd.ordinal();
         prop.u.setType("buffer");
         prop.u.buffer = new dtv_property.Buffer();
@@ -85,15 +85,15 @@ public class dtv_properties extends Structure {
      * using the "st field" in the union
      */
     public void addStatsCmd(C.CMD cmd) {
-        dtv_property prop = props[num++];
+        dtv_property prop = propsArray[num++];
         prop.cmd = cmd.ordinal();
         prop.u.setType("st");
         prop.u.st = new dtv_property.dtv_fe_stats();
     }
 
     public void clear() {
-        for (int i = 0; i < props.length; i++) {
-            dtv_property prop = props[i];
+        for (int i = 0; i < propsArray.length; i++) {
+            dtv_property prop = propsArray[i];
             prop.cmd = 0;
             prop.u.setType("data");
             prop.u.data = 0;
@@ -103,16 +103,7 @@ public class dtv_properties extends Structure {
         num = 0;
     }
 
-    public void setViaIoctl(int fdFrontend) {
-//        this.write();
-//        System.out.println(this.toString(true));
-
-        final int FE_SET_PROPERTY = 82;
-        C.ioctl(fdFrontend, C.DIR.write, FE_SET_PROPERTY, this);
-    }
-
-    public void getViaIoctrl(int fdFrontend) {
-        final int FE_GET_PROPERTY = 83;
-        C.ioctl(fdFrontend, C.DIR.read, FE_GET_PROPERTY, this);
+    public dtv_property[] getPropsArray() {
+        return propsArray;
     }
 }
