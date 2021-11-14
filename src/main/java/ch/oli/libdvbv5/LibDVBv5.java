@@ -8,36 +8,123 @@ public interface LibDVBv5 extends Library {
 
     dvb_v5_fe_parms dvb_fe_open(int adapter, int frontend, int verbose, int use_legacy_call);
     int dvb_set_sys(dvb_v5_fe_parms parms, fe_delivery_system sys);
+    int dvb_set_compat_delivery_system(dvb_v5_fe_parms parms, int sys);
 
     /* DVBv5 property Commands */
-    int DTV_UNDEFINED           =0 ;
-    int DTV_TUNE                =1 ;
-    int DTV_CLEAR               =2 ;
-    int DTV_FREQUENCY           =3 ;
-    int DTV_MODULATION          =4 ;
-    int DTV_BANDWIDTH_HZ        =5 ;
-    int DTV_INVERSION           =6 ;
-    int DTV_DISEQC_MASTER       =7 ;
-    int DTV_SYMBOL_RATE         =8 ;
-    int DTV_INNER_FEC           =9 ;
-    int DTV_VOLTAGE             =10;
-    int DTV_TONE                =11;
-    int DTV_PILOT               =12;
-    int DTV_ROLLOFF             =13;
-    int DTV_DISEQC_SLAVE_REPLY  =14;
+    int DTV_UNDEFINED          =  0;
+    int DTV_TUNE               =  1;
+    int DTV_CLEAR              =  2;
+    int DTV_FREQUENCY          =  3;
+    int DTV_MODULATION         =  4;
+    int DTV_BANDWIDTH_HZ       =  5;
+    int DTV_INVERSION          =  6;
+    int DTV_DISEQC_MASTER      =  7;
+    int DTV_SYMBOL_RATE        =  8;
+    int DTV_INNER_FEC          =  9;
+    int DTV_VOLTAGE            = 10;
+    int DTV_TONE               = 11;
+    int DTV_PILOT              = 12;
+    int DTV_ROLLOFF            = 13;
+    int DTV_DISEQC_SLAVE_REPLY = 14;
     int dvb_fe_store_parm(dvb_v5_fe_parms parms, int cmd, int value);
     int dvb_fe_set_parms(dvb_v5_fe_parms parms);
-    int dvb_fe_get_stats(dvb_v5_fe_parms parms);
+    int dvb_fe_get_parms(dvb_v5_fe_parms parms);
+    int dvb_fe_retrieve_parm(dvb_v5_fe_parms parms, int cmd, IntByReference value);
+
+    /* Basic enumeration set for querying unlimited capabilities */
+    int DTV_FE_CAPABILITY_COUNT = 15;
+    int DTV_FE_CAPABILITY       = 16;
+    int DTV_DELIVERY_SYSTEM     = 17;
+
+    /* ISDB-T and ISDB-Tsb */
+    int DTV_ISDBT_PARTIAL_RECEPTION  = 18;
+    int DTV_ISDBT_SOUND_BROADCASTING = 19;
+
+    int DTV_ISDBT_SB_SUBCHANNEL_ID   = 20;
+    int DTV_ISDBT_SB_SEGMENT_IDX     = 21;
+    int DTV_ISDBT_SB_SEGMENT_COUNT   = 22;
+
+    int DTV_ISDBT_LAYERA_FEC               = 23;
+    int DTV_ISDBT_LAYERA_MODULATION        = 24;
+    int DTV_ISDBT_LAYERA_SEGMENT_COUNT     = 25;
+    int DTV_ISDBT_LAYERA_TIME_INTERLEAVING = 26;
+    int DTV_ISDBT_LAYERB_FEC               = 27;
+    int DTV_ISDBT_LAYERB_MODULATION        = 28;
+    int DTV_ISDBT_LAYERB_SEGMENT_COUNT     = 29;
+    int DTV_ISDBT_LAYERB_TIME_INTERLEAVING = 30;
+    int DTV_ISDBT_LAYERC_FEC               = 31;
+    int DTV_ISDBT_LAYERC_MODULATION        = 32;
+    int DTV_ISDBT_LAYERC_SEGMENT_COUNT     = 33;
+    int DTV_ISDBT_LAYERC_TIME_INTERLEAVING = 34;
+
+    int DTV_API_VERSION = 35;
+
+    int DTV_CODE_RATE_HP        = 36;
+    int DTV_CODE_RATE_LP        = 37;
+    int DTV_GUARD_INTERVAL      = 38;
+    int DTV_TRANSMISSION_MODE   = 39;
+    int DTV_HIERARCHY           = 40;
+
+    int DTV_ISDBT_LAYER_ENABLED = 41;
+
+    int DTV_STREAM_ID           = 42;
+    int DTV_ISDBS_TS_ID_LEGACY  = DTV_STREAM_ID;
+    int DTV_DVBT2_PLP_ID_LEGACY = 43;
+
+    int DTV_ENUM_DELSYS         = 44;
+
+    /* ATSC-MH */
+    int DTV_ATSCMH_FIC_VER           = 45;
+    int DTV_ATSCMH_PARADE_ID         = 46;
+    int DTV_ATSCMH_NOG               = 47;
+    int DTV_ATSCMH_TNOG              = 48;
+    int DTV_ATSCMH_SGN               = 49;
+    int DTV_ATSCMH_PRC               = 50;
+    int DTV_ATSCMH_RS_FRAME_MODE     = 51;
+    int DTV_ATSCMH_RS_FRAME_ENSEMBLE = 52;
+    int DTV_ATSCMH_RS_CODE_MODE_PRI  = 53;
+    int DTV_ATSCMH_RS_CODE_MODE_SEC  = 54;
+    int DTV_ATSCMH_SCCC_BLOCK_MODE   = 55;
+    int DTV_ATSCMH_SCCC_CODE_MODE_A  = 56;
+    int DTV_ATSCMH_SCCC_CODE_MODE_B  = 57;
+    int DTV_ATSCMH_SCCC_CODE_MODE_C  = 58;
+    int DTV_ATSCMH_SCCC_CODE_MODE_D  = 59;
+
+    int DTV_INTERLEAVING = 60;
+    int DTV_LNA          = 61;
 
     /* Quality parameters */
     int DTV_STAT_SIGNAL_STRENGTH        = 62;
-    int DTV_STAT_CNR                    = 63;
+    int DTV_STAT_CNR                    = 63; // Signal to Noise ratio for the main carrier.
     int DTV_STAT_PRE_ERROR_BIT_COUNT    = 64;
     int DTV_STAT_PRE_TOTAL_BIT_COUNT    = 65;
     int DTV_STAT_POST_ERROR_BIT_COUNT   = 66;
     int DTV_STAT_POST_TOTAL_BIT_COUNT   = 67;
     int DTV_STAT_ERROR_BLOCK_COUNT      = 68;
     int DTV_STAT_TOTAL_BLOCK_COUNT      = 69;
+
+    /* Physical layer scrambling */
+    int DTV_SCRAMBLING_SEQUENCE_INDEX = 70;
+    int DTV_MAX_COMMAND = DTV_SCRAMBLING_SEQUENCE_INDEX;
+
+    int DTV_STAT_COMMAND_START = 512;
+    int DTV_STATUS             = (DTV_STAT_COMMAND_START + 0);
+    int DTV_BER                = (DTV_STAT_COMMAND_START + 1);
+    int DTV_PER                = (DTV_STAT_COMMAND_START + 2);
+    int DTV_QUALITY            = (DTV_STAT_COMMAND_START + 3);
+    int DTV_PRE_BER            = (DTV_STAT_COMMAND_START + 4);
+    int DTV_MAX_STAT_COMMAND   = DTV_PRE_BER;
+
+
+    /**
+     * Updates the stats cache from the available stats at the Kernel
+     */
+    int dvb_fe_get_stats(dvb_v5_fe_parms parms);
+
+    /**
+     * That's similar of calling both dvb_fe_get_parms() and dvb_fe_get_stats().
+     */
+    int dvb_fe_get_event(dvb_v5_fe_parms parms);
     int dvb_fe_retrieve_stats(dvb_v5_fe_parms parms, int cmd, IntByReference value);
 
     @Structure.FieldOrder({
@@ -177,4 +264,36 @@ public interface LibDVBv5 extends Library {
         public int low1, high1;
         public int low2, high2;
     }
+
+
+    /**
+     * @return file descriptor on success, -1 otherwise.
+     */
+    int dvb_dmx_open(int adapter, int demux);
+
+    /**
+     *
+     * @param dmxfd       File descriptor for the demux device
+     * @param pid         Program ID to filter. Use 0x2000 to select all PIDs
+     * @param type        ype of the PID (DMX_PES_VIDEO, DMX_PES_AUDIO, DMX_PES_OTHER, etc)
+     * @param output      Where the data will be output (DMX_OUT_TS_TAP, DMX_OUT_DECODER, etc).
+     * @param buffersize Size of the buffer to be allocated to store the filtered data
+     * @return zero on success, -1 otherwise.
+     */
+    int dvb_set_pesfilter(int dmxfd, int pid, int type, int output, int buffersize);
+
+    /**
+     *
+     * @param dmxfd    File descriptor for the demux device
+     * @param pid      Program ID to filter. Use 0x2000 to select all PIDs
+     * @param filtsize Size of the filter (up to 18 btyes)
+     * @param filter   data to filter. Can be NULL or should have filtsize length
+     * @param mask     filter mask. Can be NULL or should have filtsize length
+     * @param mode     mode mask. Can be NULL or should have filtsize length
+     * @param flags    flags for set filter (DMX_CHECK_CRC,DMX_ONESHOT, DMX_IMMEDIATE_START).
+     * @return         zero on success, -1 otherwise.
+     */
+    int dvb_set_section_filter(int dmxfd, int pid,
+                               int filtsize, byte[] filter, byte[] mask, byte[] mode,
+                               int flags);
 }

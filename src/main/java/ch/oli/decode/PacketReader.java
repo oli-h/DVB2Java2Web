@@ -1,4 +1,4 @@
-package ch.oli;
+package ch.oli.decode;
 
 import java.io.IOException;
 import java.io.OutputStream;

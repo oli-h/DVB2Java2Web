@@ -16,9 +16,6 @@ public class dmx_pes_filter_params extends IoctlBase {
         DMX_IN_DVR
     }
 
-    ;
-
-
     /**
      * enum dmx_output - Output for the demux.
      *
@@ -32,7 +29,7 @@ public class dmx_pes_filter_params extends IoctlBase {
      * filters for which @DMX_OUT_TS_TAP was specified.
      * @DMX_OUT_TSDEMUX_TAP: Like @DMX_OUT_TS_TAP but retrieved from the DMX device.
      */
-    enum dmx_output {
+    public enum dmx_output {
         DMX_OUT_DECODER,
         DMX_OUT_TAP,
         DMX_OUT_TS_TAP,
@@ -66,7 +63,7 @@ public class dmx_pes_filter_params extends IoctlBase {
      * @DMX_PES_OTHER:     any other PID.
      */
 
-    enum dmx_ts_pes {
+    public enum dmx_ts_pes {
         DMX_PES_AUDIO0,
         DMX_PES_VIDEO0,
         DMX_PES_TELETEXT0,

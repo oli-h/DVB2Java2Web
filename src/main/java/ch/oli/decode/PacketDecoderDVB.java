@@ -1,10 +1,10 @@
-package ch.oli;
+package ch.oli.decode;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-public class DVB {
+public class PacketDecoderDVB {
 
     private static final byte[] buf = new byte[188 * 10]; // room for N packets (each has 188 bytes)
 
