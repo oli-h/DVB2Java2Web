@@ -43,6 +43,17 @@ public class PacketReader {
         return ((buf[idx - 2] & 0xFF) << 8) | (buf[idx - 1] & 0xFF);
     }
 
+    public static long fromBCD(long bcd) {
+        long value = 0;
+        long mult = 1;
+        while (bcd != 0) {
+            value += (bcd & 15) * mult;
+            mult *= 10;
+            bcd >>= 4;
+        }
+        return value;
+    }
+
     public long pull32() {
         if (remain < 4) {
             throw new RuntimeException("not enough bytes");

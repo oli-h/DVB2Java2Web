@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html ng-app="dvbApp">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js" integrity="sha512-7oYXeK0OxTFxndh0erL8FsjGvrl2VMDor6fVqzlLGfwOQQqTbYsGPv4ZZ15QHfSk80doyaM0ZJdvkyDcVO7KFA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script></head>
+    <script src="index.js"></script>
+    <style>
+        body {
+            font: 13pt sans-serif;
+        }
+        a {
+            color: #000;
+            white-space: nowrap;
+            text-decoration: none;
+            background-color: #F4F4F4;
+        }
+        a:hover {
+            background-color: #F0F0F0;
+        }
+        table {
+            border-collapse: collapse;
+        }
+<!--        tr:nth-child(even) {-->
+<!--            background-color: #EEE;-->
+<!--        }-->
+        th, td {
+            padding:0px 2px; border-left:1px solid #CCC;
+        }
+        tr {
+            border-top:1px solid #CCC;
+        }
+        tr.highlight {
+            background-color: #CFC;
+        }
+    </style>
+<body ng-controller="IndexController as index">
+    <table>
+        <tr>
+            <td><label>Freq (Hz)</label></td>
+            <td><label>Modulation</label></td>
+            <td><label>SymbolRate (/s)</label></td>
+        </tr>
+        <tr>
+            <td><input type="number" ng-model="index.tuneParams.frequency"  ></td>
+            <td><input type="number" ng-model="index.tuneParams.symbol_rate"></td>
+            <td>
+                <select ng-model="index.tuneParams.modulation">
+                    <option value="QAM_64">QAM_64</option>
+                    <option>QAM_256</option>
+                </select>
+            </td>
+            <td><button ng-click="index.tune()">Tune</button> {{index.tuneResponse}}</td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <th>Network</th>
+            <th>TS-ID</th>
+            <th>Freq</th>
+            <th>Services</th>
+        </tr>
+        <tr ng-repeat="ts in index.transportStreams" ng-class="ts.clazz">
+            <td>{{ts.network_id}}</td>
+            <td><a href="#" ng-click="index.tuneTs(ts)">{{ts.transport_stream_id}}</a></td>
+            <td title="{{ts.symbol_rate/1000.0}} {{ts.modulation}}">{{ts.frequency/1000/1000.0}}</td>.service_name
+            <td>
+                <div style="display: inline-block; min-width:300pt" ng-repeat="s in ts.services">
+                    <a href="#">
+<!--                        <span ng-show="s.logicalChannelNumber.visible_service_flag">{{s.logicalChannelNumber.logical_channel_number}}:</span>-->
+<!--                        <span ng-show="!s.logicalChannelNumber.visible_service_flag">not visible:</span>-->
+
+                        <span ng-show="s.serviceDescriptor.free_CA_mode" style="color:#A00">CA</span>
+                        <span ng-show="!s.serviceDescriptor.free_CA_mode" style="color:#0A0">FTA</span>
+                        {{s.service_type_txt}} {{s.service_id}}
+                        "{{s.serviceDescriptor.service_name}}"
+                        <span ng-show="s.serviceDescriptor.running_status!=4" style="color:#A00">not running</span>
+                    </a>
+                    &nbsp;
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
