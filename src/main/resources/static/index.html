@@ -38,6 +38,7 @@
             <td><label>Freq (Hz)</label></td>
             <td><label>Modulation</label></td>
             <td><label>SymbolRate (/s)</label></td>
+            <td><button ng-click="index.startOver()">Start over</button></td>
         </tr>
         <tr>
             <td><input type="number" ng-model="index.tuneParams.frequency"  ></td>
@@ -48,7 +49,19 @@
                     <option>QAM_256</option>
                 </select>
             </td>
+            <td><button ng-click="index.stopFrontend()">Stop frontend</button></td>
             <td><button ng-click="index.tune()">Tune</button> {{index.tuneResponse}}</td>
+        </tr>
+    </table>
+
+    <table>
+        <tr ng-repeat="ei4s in index.events">
+            <td style="position:relative; z-index:1; background-color:#EEE">{{ei4s.serviceDescriptor.service_name}}</td>
+            <td style="position:relative; width:100%;">
+                <div ng-repeat="ei in ei4s.eiList" style="z-index:-1; white-space:nowrap; overflow:hidden; display:inline-block; width:{{ei.width}}px; position:absolute; top:0; left:{{ei.xpos}}px;">
+                    I
+                </div>
+            </td>
         </tr>
     </table>
 

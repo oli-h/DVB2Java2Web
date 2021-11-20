@@ -2,6 +2,7 @@ var dvbApp = angular.module('dvbApp', []);
 
 dvbApp.controller('IndexController', function IndexController($scope, $http, $timeout) {
     const index = this;
+    const nowSeconds = Date.now()/1000 ;
 
     index.tuneParams = {
         frequency  : 426000000,
@@ -11,15 +12,23 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     index.transportStreams = [];
     var serviceDescriptors = {};
     var logicalChannelNumbers = {};
+    var ei4sMap = {};
 
     index.tune = function() {
-        index.transportStreams = [];
-        serviceDescriptors = {};
-        logicalChannelNumbers = {};
         index.tuneResponse = "...";
         $http.post("tune", index.tuneParams).then(function(resp) {
             index.tuneResponse =  resp.data;
         });
+    }
+    index.stopFrontend = () => {
+        $http.post("stopFrontend");
+    }
+    index.startOver = () => {
+        index.transportStreams = [];
+        index.events = [];
+        serviceDescriptors = {};
+        logicalChannelNumbers = {};
+        ei4sMap = {};
     }
 
     index.tuneTs = function(ts) {
@@ -50,7 +59,7 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
                             && el.services.length     == msg.services.length
                     });
                     if (!existing) {
-                        index.transportStreams.push(msg);
+//                        index.transportStreams.push(msg);
                         index.transportStreams.sort((ts1, ts2)=>ts1.frequency-ts2.frequency);
                         existing = msg;
                         existing.clazz = {};
@@ -75,6 +84,43 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
                     msg.serviceDescriptors.forEach(sd => {
                         serviceDescriptors[sd.service_id] = sd;
                     })
+                }
+                if (msg.type == "eventInformation") {
+                    var ei4s = ei4sMap[msg.service_id];
+                    var modified = false;
+                    if (!ei4s) {
+                        ei4s = ei4sMap[msg.service_id] = {
+                                service_id:msg.service_id,
+                                eiList:[]
+                            };
+                        modified = true;
+                    }
+                    msg.eiList.forEach(ei => {
+                        var oldEI = ei4s.eiList.find(xxx=>xxx.start_time == ei.start_time);
+                        if (!oldEI) {
+                            ei.xpos = (ei.start_time - nowSeconds)/500 + 20;
+                            ei.width = ei.duration / 500;
+                            if(ei.width<2) {
+                                ei.width=2;
+                            }
+                            ei4s.eiList.push(ei);
+                            modified = true;
+                        }
+                    });
+
+                    if (modified) {
+                        ei4s.eiList.sort((ei1,ei2)=>ei1.start_time-ei2.start_time)
+                        index.events = [];
+                        for(var service_id in ei4sMap) {
+                            var ei4s = ei4sMap[service_id]
+                            var sd = serviceDescriptors[ei4s.service_id];
+                            if (sd) {
+                                ei4s.serviceDescriptor = sd;
+                            }
+                            index.events.push(ei4s);
+                        }
+                        index.events.sort((o1,o2) => o1.service_id - o2.service_id);
+                    }
                 }
             });
         }

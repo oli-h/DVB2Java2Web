@@ -23,10 +23,12 @@ public class OliController {
     @Autowired
     private DecoderSDT decoderSDT;
 
-    @PostConstruct
-    public void postConstruct() {
-        fe = new DevDvbFrontend(1);
-    }
+    @Autowired
+    private DecoderEIT decoderEIT;
+
+//    @PostConstruct
+//    public void postConstruct() {
+//    }
 
     public static class TuneParams {
         public int frequency;
@@ -37,6 +39,8 @@ public class OliController {
     @PostMapping(value = "/tune", produces = MediaType.TEXT_PLAIN_VALUE)
     public String tune(@RequestBody TuneParams tuneParams) throws Exception {
         stopAllRunningPidReceivers();
+        stopFrontend();
+        fe = new DevDvbFrontend(1);
 
         long t0 = System.currentTimeMillis();
 
@@ -58,14 +62,23 @@ public class OliController {
             long millis = System.currentTimeMillis() - t0;
             int status = fe.feReadStatus();
             if (status == 31) {
-                startPidReceiver(16);
-                startPidReceiver(17);
+                startPidReceiver(0x10); // NIT
+                startPidReceiver(0x11); // SDT
+                startPidReceiver(0x12); // EIT
                 return "LOCK in " + millis + " ms";
             }
             if (millis >= 500) {
                 return "NO LOCK - giving up after " + millis + " ms";
             }
             Thread.sleep(10);
+        }
+    }
+
+    @PostMapping(value = "/stopFrontend")
+    public void stopFrontend() {
+        if (fe != null) {
+            fe.close();
+            fe = null;
         }
     }
 
@@ -93,6 +106,9 @@ public class OliController {
 
         public PidReceiver(int pid) {
             dmx = fe.openDedmux();
+
+            dmx.dmxSetBufferSize(8192);
+
             dmx_sct_filter_params dmxSct = new dmx_sct_filter_params();
             dmxSct.pid = (short) pid;
             dmxSct.flags = dmx_sct_filter_params.DMX_CHECK_CRC | dmx_sct_filter_params.DMX_IMMEDIATE_START;
@@ -165,6 +181,9 @@ public class OliController {
             // in PID 17: Service Description Table (SDT)
             else if (table_id == 0x42 || table_id == 0x46) { // actual_transport_stream (0x42) or other_transport_stream (0x46)
                 decoderSDT.decode(prSection, table_id, something);
+            // in PID 18: Event Information Table (EIT)
+            } else if(table_id >=0x4E && table_id<=0x6F) {
+                decoderEIT.decode(prSection, table_id, something);
             }
             // in some PID: Program Map Table (PMT)
             else if (table_id == 0x02) { // program_map_section

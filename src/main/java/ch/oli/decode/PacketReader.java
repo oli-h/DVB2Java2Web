@@ -43,9 +43,29 @@ public class PacketReader {
         return ((buf[idx - 2] & 0xFF) << 8) | (buf[idx - 1] & 0xFF);
     }
 
+    public int pull24() {
+        if (remain < 3) {
+            throw new RuntimeException("not enough bytes");
+        }
+        remain -= 3;
+        idx += 3;
+        return ((buf[idx - 3] & 0xFF) << 16) |((buf[idx - 2] & 0xFF) << 8) | (buf[idx - 1] & 0xFF);
+    }
+
     public static long fromBCD(long bcd) {
         long value = 0;
         long mult = 1;
+        while (bcd != 0) {
+            value += (bcd & 15) * mult;
+            mult *= 10;
+            bcd >>= 4;
+        }
+        return value;
+    }
+
+    public static int fromBCD(int bcd) {
+        int value = 0;
+        int mult = 1;
         while (bcd != 0) {
             value += (bcd & 15) * mult;
             mult *= 10;
@@ -81,7 +101,7 @@ public class PacketReader {
                 case 5: charset = Charset.forName("ISO-8859-9"); break;
             }
         }
-        return new String(buf, idx - length, length,charset);
+        return new String(buf, idx - length, length, charset);
     }
 
 
