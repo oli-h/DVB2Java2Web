@@ -6,7 +6,7 @@ Private small project with these challenges
 - receive and decode all those data-tables (PAT, PMT, NIT, SDT, EIT, etc...) - also with Java
 - present decoded stuff in a small Web-UI (using good old AngularJS)
 
-## Howto
+## Howto run
 - Clone
 - Adapt some for-now hard-coded parameters to your needs (e.g. Adapter-Number, Network-ID, Initial tuning parameter)
 - Maven-build - or just have IntelliJ or so
@@ -19,3 +19,8 @@ Private small project with these challenges
 - Receive and decode all those DVB-tables
 - Send the decoded values via JSON and WebSocket to the Web-UI
 - Web-UI collects the single infos to a "whole view" and presents it
+
+## code structure
+- package `ch.oli.ioctl` contains the JNA-native stuff - especially lots of "Java'ized" C-structs from the Linux DVB C-Header-Files
+- package `ch.oli.decode` contains my first implementations of various DVB-decoders (they simply print to text-console) and helpers
+- package `ch.oli.web` contains the Spring-Boot application which makes use of the other packages 
