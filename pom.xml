@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>ch.oli</groupId>
-    <artifactId>dvb</artifactId>
+    <artifactId>DVB2Java2Web</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
