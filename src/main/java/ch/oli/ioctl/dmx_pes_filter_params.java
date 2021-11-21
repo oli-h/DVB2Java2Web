@@ -19,7 +19,7 @@ public class dmx_pes_filter_params extends Structure {
      * @DMX_IN_FRONTEND: Input from a front-end device.
      * @DMX_IN_DVR: Input from the logical DVR device.
      */
-    enum dmx_input implements NativeMapped {
+    public enum dmx_input implements NativeMapped {
         DMX_IN_FRONTEND, DMX_IN_DVR;
         @Override
         public Object fromNative(Object nativeValue, FromNativeContext context) {

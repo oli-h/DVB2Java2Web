@@ -12,16 +12,14 @@ public class DecoderSDT {
     @Autowired
     private ServerWebSocketHandler serverWebSocketHandler;
 
-    public void decode(PacketReader prSection, int table_id, int something) {
+    public void decode(PacketReader prSection, int something) {
         int transport_stream_id = something;
 
         int original_network_id = prSection.pull16();
         int reserved_future_use = prSection.pull8();
 
-        ServiceDescriptors sds = new ServiceDescriptors();
         while (prSection.remain() > 4) {
             ServiceDescriptor sd = new ServiceDescriptor();
-            sds.serviceDescriptors.add(sd);
             sd.service_id = prSection.pull16();
             int tmp = prSection.pull8();
             sd.EIT_schedule_flag = (tmp & 2) > 0;
@@ -44,19 +42,15 @@ public class DecoderSDT {
                     sd.service_name = prDescriptor.pullChar(service_name_length);
                 }
             }
+            serverWebSocketHandler.broadcast(sd);
         }
-        serverWebSocketHandler.broadcast(sds);
 //        if (prSection.remain() != 4) {
 //            System.out.printf("Not exactly 32 Bit (CRC) remaining");
 //        }
     }
 
-    public static class ServiceDescriptors {
-        public String type = "serviceDescriptors";
-        public ArrayList<ServiceDescriptor> serviceDescriptors = new ArrayList<>();
-    }
-
     public static class ServiceDescriptor {
+        public String type = "sdt";
         public int service_id;
         public boolean EIT_schedule_flag;
         public boolean EIT_present_following_flag;

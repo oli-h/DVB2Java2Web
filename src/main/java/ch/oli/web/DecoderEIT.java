@@ -17,7 +17,7 @@ public class DecoderEIT {
     @Autowired
     private ServerWebSocketHandler serverWebSocketHandler;
 
-    public void decode(PacketReader prSection, int table_id, int something) {
+    public void decode(PacketReader prSection, int something) {
         int service_id = something;
 
         int transport_stream_id = prSection.pull16();
@@ -25,12 +25,9 @@ public class DecoderEIT {
         int segment_last_section_number = prSection.pull8();
         int last_table_id = prSection.pull8();
 
-        EventInformationForService ei4s = new EventInformationForService();
-        ei4s.service_id = service_id;
-
         while (prSection.remain() > 4) {
             EventInformation ei = new EventInformation();
-            ei4s.eiList.add(ei);
+            ei.service_id = service_id;
             ei.event_id = prSection.pull16();
 
             int start_time_mjd   = prSection.pull16();
@@ -74,19 +71,15 @@ public class DecoderEIT {
                 } else {
                 }
             }
+            serverWebSocketHandler.broadcast(ei);
         }
-        serverWebSocketHandler.broadcast(ei4s);
 
         // 4 bytes remain CRC - ignored
     }
 
-    public static class EventInformationForService {
-        public String type = "eventInformation";
-        public int service_id;
-        public ArrayList<EventInformation> eiList = new ArrayList<>();
-    }
-
     public static class EventInformation {
+        public String type = "eit";
+        public int service_id;
         public int event_id;
         public long start_time; // seconds since 1.1.1970
         public long duration;   // seconds

@@ -14,7 +14,7 @@ public class DecoderNIT {
     @Autowired
     private ServerWebSocketHandler serverWebSocketHandler;
 
-    public void decode(PacketReader prSection, int table_id, int something) {
+    public void decode(PacketReader prSection, int something) {
         int network_id = something;
         if (network_id != 43020) {
             return;
@@ -115,7 +115,6 @@ public class DecoderNIT {
 //                        }
                     }
                 }
-                ts.services.sort(Comparator.comparingInt(o -> o.service_id));
                 serverWebSocketHandler.broadcast(ts);
             }
         }

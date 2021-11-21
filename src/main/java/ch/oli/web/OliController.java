@@ -4,18 +4,23 @@ import ch.oli.decode.PacketReader;
 import ch.oli.ioctl.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 public class OliController {
 
     private DevDvbFrontend fe;
+
+    @Autowired
+    private DecoderPAT decoderPAT;
+
+    @Autowired
+    private DecoderPMT decoderPMT;
 
     @Autowired
     private DecoderNIT decoderNIT;
@@ -62,9 +67,10 @@ public class OliController {
             long millis = System.currentTimeMillis() - t0;
             int status = fe.feReadStatus();
             if (status == 31) {
-                startPidReceiver(0x10); // NIT
-                startPidReceiver(0x11); // SDT
-                startPidReceiver(0x12); // EIT
+                startPidReceiverIfNotYetStarted(0x00); // PAT
+                startPidReceiverIfNotYetStarted(0x10); // NIT
+                startPidReceiverIfNotYetStarted(0x11); // SDT
+//                startPidReceiverIfNotYetStarted(0x12); // EIT
                 return "LOCK in " + millis + " ms";
             }
             if (millis >= 500) {
@@ -82,22 +88,48 @@ public class OliController {
         }
     }
 
-    private ConcurrentLinkedDeque<PidReceiver> pidReceivers = new ConcurrentLinkedDeque<>();
+    @GetMapping(value = "/pes/{pid}")
+    public void stream(@PathVariable int pid, HttpServletResponse resp) {
+        try (DevDvbDemux dmx = fe.openDedmux()) {
+            dmx.dmxSetBufferSize(8192);
 
-    private void stopAllRunningPidReceivers() {
-        while (true) {
-            PidReceiver pr = pidReceivers.poll();
-            if (pr == null) {
-                return;
+            dmx_pes_filter_params filter = new dmx_pes_filter_params();
+            filter.pid = (short) pid;
+            filter.input = dmx_pes_filter_params.dmx_input.DMX_IN_FRONTEND;
+            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
+            filter.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_AUDIO0;
+            filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
+            dmx.dmxSetPesFilter(filter);
+
+            resp.setContentType("audio/mpa");
+            byte[] buf = new byte[8192];
+            long max = System.currentTimeMillis() + 10_000_000;
+            while (System.currentTimeMillis() < max) {
+                int read = dmx.file.read(buf);
+                System.out.println("read " + read + " bytes");
+                resp.getOutputStream().write(buf, 0, read);
+                System.out.println("wrote " + read + " bytes");
             }
-            pr.close();
+        } catch(Exception ex) {
+            ex.printStackTrace();
         }
     }
 
-    private void startPidReceiver(int pid) {
-        PidReceiver pr = new PidReceiver(pid);
-        pidReceivers.add(pr);
-        pr.start();
+    private ConcurrentHashMap<Integer, PidReceiver> pidReceivers = new ConcurrentHashMap<>();
+
+    private void stopAllRunningPidReceivers() {
+        while (pidReceivers.size() > 0) {
+            Integer pid = pidReceivers.keys().nextElement();
+            pidReceivers.remove(pid).close();
+        }
+    }
+
+    public void startPidReceiverIfNotYetStarted(int pid) {
+        pidReceivers.computeIfAbsent(pid, newPid -> {
+            PidReceiver pr = new PidReceiver(newPid);
+            pr.start();
+            return pr;
+        });
     }
 
     public class PidReceiver extends Thread {
@@ -164,11 +196,9 @@ public class OliController {
             int section_number = prSection.pull8();
             int last_section_number = prSection.pull8();
 
-//                System.out.format("(TableID %d sectLen=%4d Section %d/%d)", table_id, section_length, section_number, last_section_number);
-
             // in PID 0: Program Association Table (PAT)
             if (table_id == 0x00) {
-                decodePAT(prSection, table_id ,something);
+                decoderPAT.decode(prSection, something, this);
             }
             // in PID 1: Conditional Access Table (CAT)
             else if (table_id == 0x01) { // conditional_access_section"
@@ -176,32 +206,21 @@ public class OliController {
             }
             // in PID 16: Network Information Table (NIT)
             else if (table_id == 0x40 || table_id == 0x41) { // actual_network (0x40) or other_network 0x41
-                decoderNIT.decode(prSection, table_id, something);
+                decoderNIT.decode(prSection, something);
             }
             // in PID 17: Service Description Table (SDT)
             else if (table_id == 0x42 || table_id == 0x46) { // actual_transport_stream (0x42) or other_transport_stream (0x46)
-                decoderSDT.decode(prSection, table_id, something);
+                decoderSDT.decode(prSection, something);
                 // in PID 18: Event Information Table (EIT)
             } else if (table_id >= 0x4E && table_id <= 0x6F) {
-                decoderEIT.decode(prSection, table_id, something);
+                decoderEIT.decode(prSection, something);
             }
             // in some PID: Program Map Table (PMT)
             else if (table_id == 0x02) { // program_map_section
-//                decodePMT(prSection, table_id, something);
+                decoderPMT.decode(prSection, something);
             }
-
         }
     }
-
-    private void decodePAT(PacketReader prSection, int table_id, int something) {
-//        System.out.printf(" PAT:");
-        while (prSection.remain() > 4) {
-            int program = prSection.pull16();
-            int pmtPID = prSection.pull16() & 0x1FFF;
-//            System.out.format(" Prog:%d->PMT-PID:%d", program, pmtPID);
-        }
-    }
-
 }
 
 
