@@ -57,6 +57,7 @@
     <table>
         <tr ng-repeat="ei4s in index.events">
             <td style="position:relative; z-index:1; background-color:#EEE">{{ei4s.serviceDescriptor.service_name}}</td>
+<!--            <td>{{ei4s.eiList}}</td>-->
             <td style="position:relative; width:100%;">
                 <div ng-repeat="ei in ei4s.eiList" style="z-index:-1; white-space:nowrap; overflow:hidden; display:inline-block; width:{{ei.width}}px; position:absolute; top:0; left:{{ei.xpos}}px;">
                     I
@@ -75,7 +76,7 @@
         <tr ng-repeat="ts in index.transportStreams" ng-class="ts.clazz">
             <td>{{ts.network_id}}</td>
             <td><a href="#" ng-click="index.tuneTs(ts)">{{ts.transport_stream_id}}</a></td>
-            <td title="{{ts.symbol_rate/1000.0}} {{ts.modulation}}">{{ts.frequency/1000/1000.0}}</td>.service_name
+            <td title="{{ts.symbol_rate/1000.0}} {{ts.modulation}}">{{ts.frequency/1000/1000.0}}</td>
             <td>
                 <div style="display: inline-block; min-width:300pt" ng-repeat="s in ts.services">
                     <a href="#">

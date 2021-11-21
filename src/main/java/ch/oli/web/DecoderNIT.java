@@ -122,7 +122,7 @@ public class DecoderNIT {
     }
 
     public static class TransportStream {
-        public String type = "ts";
+        public String type = "transportStream";
         public int network_id;
         public int transport_stream_id;
         public int original_network_id;

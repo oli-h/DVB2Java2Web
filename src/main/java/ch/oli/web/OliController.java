@@ -181,8 +181,8 @@ public class OliController {
             // in PID 17: Service Description Table (SDT)
             else if (table_id == 0x42 || table_id == 0x46) { // actual_transport_stream (0x42) or other_transport_stream (0x46)
                 decoderSDT.decode(prSection, table_id, something);
-            // in PID 18: Event Information Table (EIT)
-            } else if(table_id >=0x4E && table_id<=0x6F) {
+                // in PID 18: Event Information Table (EIT)
+            } else if (table_id >= 0x4E && table_id <= 0x6F) {
                 decoderEIT.decode(prSection, table_id, something);
             }
             // in some PID: Program Map Table (PMT)

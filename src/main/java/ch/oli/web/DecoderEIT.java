@@ -77,7 +77,6 @@ public class DecoderEIT {
         }
         serverWebSocketHandler.broadcast(ei4s);
 
-
         // 4 bytes remain CRC - ignored
     }
 
