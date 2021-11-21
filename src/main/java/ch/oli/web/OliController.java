@@ -4,7 +4,6 @@ import ch.oli.decode.PacketReader;
 import ch.oli.ioctl.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -30,10 +29,6 @@ public class OliController {
 
     @Autowired
     private DecoderEIT decoderEIT;
-
-//    @PostConstruct
-//    public void postConstruct() {
-//    }
 
     public static class TuneParams {
         public int frequency;
