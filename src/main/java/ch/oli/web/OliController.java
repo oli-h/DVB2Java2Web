@@ -96,12 +96,13 @@ public class OliController {
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
             filter.pid = (short) pid;
             filter.input = dmx_pes_filter_params.dmx_input.DMX_IN_FRONTEND;
-            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
-            filter.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_AUDIO0;
+//            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
+            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TSDEMUX_TAP;
+            filter.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_OTHER;
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-            resp.setContentType("audio/mpa");
+            resp.setContentType("audio/mp2t");
             byte[] buf = new byte[8192];
             long max = System.currentTimeMillis() + 10_000_000;
             while (System.currentTimeMillis() < max) {
