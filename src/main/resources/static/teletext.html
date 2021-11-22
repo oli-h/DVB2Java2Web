@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html ng-app="dvbApp">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js" integrity="sha512-7oYXeK0OxTFxndh0erL8FsjGvrl2VMDor6fVqzlLGfwOQQqTbYsGPv4ZZ15QHfSk80doyaM0ZJdvkyDcVO7KFA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script></head>
+    <script src="teletext.js"></script>
+    <link rel="stylesheet" href="oli.css">
+    </style>
+<body ng-controller="TeletextController as teletext">
+    Teletext for PID {{teletext.pid}}
+    <button ng-click="teletext.start()">Start</button>
+    <button ng-click="teletext.stop()">Stop</button>
+</body>
+</html>

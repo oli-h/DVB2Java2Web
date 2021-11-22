@@ -1,5 +1,6 @@
 package ch.oli.web;
 
+import ch.oli.decode.PacketDecoderDVB;
 import ch.oli.decode.PacketReader;
 import ch.oli.ioctl.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,19 +92,40 @@ public class OliController {
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
             filter.pid = (short) pid;
             filter.input = dmx_pes_filter_params.dmx_input.DMX_IN_FRONTEND;
-//            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
-            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TSDEMUX_TAP;
+            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TAP;
+//            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TSDEMUX_TAP;
             filter.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_OTHER;
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
             resp.setContentType("audio/mp2t");
-            byte[] buf = new byte[8192];
+            byte[] buf = new byte[0];
             long max = System.currentTimeMillis() + 10_000_000;
             while (System.currentTimeMillis() < max) {
+
+                // wait for PES start code 00 00 01
+                int skipped = 0;
+                while (true) {
+                    while (dmx.file.readByte() != 0) {
+                        skipped++;
+                    }
+//                    System.out.println(skipped);
+                    if (dmx.file.readByte() == 0) {
+                        if (dmx.file.readByte() == 1) {
+                            break;
+                        }
+                    }
+                }
+                int streamId = dmx.file.readByte() & 0xFF;
+                int pesPacketLen = dmx.file.readShort() & 0xFFFF;
+                if (buf.length != pesPacketLen) {
+                    buf = new byte[pesPacketLen];
+                }
                 int read = dmx.file.read(buf);
                 System.out.println("read " + read + " bytes");
+                PacketDecoderDVB.hexDump(buf);
                 resp.getOutputStream().write(buf, 0, read);
+                resp.getOutputStream().flush();
                 System.out.println("wrote " + read + " bytes");
             }
         } catch(Exception ex) {
