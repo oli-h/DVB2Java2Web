@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 
 @Service
 public class DecoderPMT {
@@ -16,8 +17,8 @@ public class DecoderPMT {
 
     public void decode(PacketReader prSection, int something) {
         ProgramMap pm = new ProgramMap();
-        pm.program_number = something;
-        pm.pcr_pid        = prSection.pull16() & 0x1FFF;
+        pm.service_id = something;
+        pm.pcr_pid    = prSection.pull16() & 0x1FFF;
 
         {
             int program_info_length = prSection.pull16() & 0xFFF;
@@ -26,7 +27,7 @@ public class DecoderPMT {
         while (prSection.remain() > 4) {
             StreamInfo si = new StreamInfo();
             pm.siList.add(si);
-            si.stream_type    = prSection.pull8();
+            si.stream_type = prSection.pull8();
             switch (si.stream_type) {
                 case   2: si.stream_type_txt = "ITU-T Rec. H.262 | ISO/IEC 13818-2 Video | ISO/IEC 11172-2 constr. parameter video stream"; break;
                 case   3: si.stream_type_txt = "ISO/IEC 11172 Audio"; break;
@@ -40,7 +41,7 @@ public class DecoderPMT {
                 case  36: si.stream_type_txt = "ITU-T Rec. H.222.0 | ISO/IEC 13818-1 reserved"; break; // UHD Video
                 case 128: si.stream_type_txt = "User private"; break; // e.g. software updates
                 default:
-                    System.out.println("Unknown stream_type " + si.stream_type + " for program_number " + pm.program_number);
+                    System.out.println("Unknown stream_type " + si.stream_type + " for program_number " + pm.service_id);
                     break;
             }
             si.elementary_PID = prSection.pull16() & 0x1FFF;
@@ -125,7 +126,7 @@ public class DecoderPMT {
                 } else if (descriptor_tag == 0xfe) { // 0xfe=User defined
                     // ???
                 } else {
-                    System.out.format("Unknown descriptor_tag 0x%02X for program_number %d\n", descriptor_tag, pm.program_number);
+                    System.out.format("Unknown descriptor_tag 0x%02X for program_number %d\n", descriptor_tag, pm.service_id);
                 }
 
             }
@@ -137,7 +138,7 @@ public class DecoderPMT {
 
     public static class ProgramMap {
         public String type = "pmt";
-        public int program_number; // = service_id
+        public int service_id; // = program_number
         public int pcr_pid;
         public ArrayList<StreamInfo> siList = new ArrayList<>();
     }

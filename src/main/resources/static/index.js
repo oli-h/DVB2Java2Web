@@ -10,7 +10,7 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
         modulation : "QAM_64" ,
     }
     index.tuneParams = {
-        frequency  : 322000000,
+        frequency  : 338000000,
         symbol_rate:   6900000,
         modulation : "QAM_256" ,
     }
@@ -19,10 +19,14 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     var serviceDescriptors = {};
     var logicalChannelNumbers = {};
 
+    var pmtMap = {};
+    index.mptList = [];
+
     var ei4sMap = {};
     index.events = [];
 
     index.tune = function() {
+        pmtMap = {};
         index.tuneResponse = "...";
         $http.post("tune", index.tuneParams).then(function(resp) {
             index.tuneResponse =  resp.data;
@@ -50,10 +54,12 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     var msgQueue = [];
     $interval(() => {
         msgQueue.forEach(msg => {
-            if (msg.type == "eit") {
+            if (msg.type == "pmt") {
+                pmtMap[msg.service_id] = msg;
+            }
+            else if (msg.type == "eit") {
                 var ei4s = ei4sMap[msg.service_id];
                 if (!ei4s) {
-                    modified = true;
                     ei4s = ei4sMap[msg.service_id] = {
                             service_id: msg.service_id,
                             eiMap: {},
@@ -106,6 +112,14 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
         });
         msgQueue.length = 0;
 
+        index.pmtList = [];
+        for (var service_id in pmtMap) {
+            var pmt = pmtMap[service_id];
+            index.pmtList.push(pmt);
+            pmt.serviceDescriptor = serviceDescriptors[service_id];
+        }
+        index.pmtList.sort((o1, o2) => o1.service_id - o2.service_id);
+
         index.events = [];
         for (var service_id in ei4sMap) {
             var ei4s = ei4sMap[service_id]; // ei4a re-used !
@@ -115,12 +129,8 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
                 var ei = ei4s.eiMap[event_id]
                 ei4s.eiList.push(ei);
             }
-//            ei4s.eiList.sort((ei1, ei2) => ei1.start_time - ei2.start_time)
 
-            var sd = serviceDescriptors[ei4s.service_id];
-            if (sd) {
-                ei4s.serviceDescriptor = sd;
-            }
+            ei4s.serviceDescriptor = serviceDescriptors[service_id];
             index.events.push(ei4s);
         }
         index.events.sort((o1, o2) => o1.service_id - o2.service_id);

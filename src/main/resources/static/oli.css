@@ -1,0 +1,24 @@
+body {
+    font: 13pt sans-serif;
+}
+a {
+    color: #000;
+    white-space: nowrap;
+    text-decoration: none;
+    background-color: #F4F4F4;
+}
+a:hover {
+    background-color: #F0F0F0;
+}
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding:0px 2px; border-left:1px solid #CCC;
+}
+tr {
+    border-top:1px solid #CCC;
+}
+tr.highlight {
+    background-color: #CFC;
+}

@@ -3,35 +3,7 @@
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js" integrity="sha512-7oYXeK0OxTFxndh0erL8FsjGvrl2VMDor6fVqzlLGfwOQQqTbYsGPv4ZZ15QHfSk80doyaM0ZJdvkyDcVO7KFA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script></head>
     <script src="index.js"></script>
-    <style>
-        body {
-            font: 13pt sans-serif;
-        }
-        a {
-            color: #000;
-            white-space: nowrap;
-            text-decoration: none;
-            background-color: #F4F4F4;
-        }
-        a:hover {
-            background-color: #F0F0F0;
-        }
-        table {
-            border-collapse: collapse;
-        }
-<!--        tr:nth-child(even) {-->
-<!--            background-color: #EEE;-->
-<!--        }-->
-        th, td {
-            padding:0px 2px; border-left:1px solid #CCC;
-        }
-        tr {
-            border-top:1px solid #CCC;
-        }
-        tr.highlight {
-            background-color: #CFC;
-        }
-    </style>
+    <link rel="stylesheet" href="oli.css">
 <body ng-controller="IndexController as index">
     <table>
         <tr>
@@ -53,6 +25,27 @@
             <td><button ng-click="index.tune()">Tune</button> {{index.tuneResponse}}</td>
         </tr>
     </table>
+
+    <table>
+        <tr>
+            <th>Service ID</th>
+            <th>Name</th>
+            <th>Stream-Infos</th>
+        </tr>
+        <tr ng-repeat="pmt in index.pmtList">
+            <td>{{pmt.service_id}}</td>
+            <td>{{pmt.serviceDescriptor.service_name}}</td>
+            <td>
+                <div ng-repeat="si in pmt.siList">
+                    <a ng-href="teletext.html#{{si.elementary_PID}}" target="_blank">
+                        {{si.stream_identifier}} {{si.stream_type_txt}}
+                        <b ng-show="si.teletextInitialPage">Teletext</b>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    </table>
+
 
     <table>
         <tr ng-repeat="ei4s in index.events">
