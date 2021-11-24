@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class PacketReader {
 
@@ -21,9 +22,9 @@ public class PacketReader {
         this.remain = length;
     }
 
-//    public byte[] wholePacket() {
-//        return Arrays.copyOfRange(buf, initialOffset, initialOffset + initialLength);
-//    }
+    public byte[] wholePacket() {
+        return Arrays.copyOfRange(buf, initialOffset, initialOffset + initialLength);
+    }
 
     public int pull8() {
         if (remain < 1) {

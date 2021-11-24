@@ -1,6 +1,6 @@
 package ch.oli.web;
 
-import ch.oli.decode.PacketDecoderDVB;
+import ch.oli.decode.MyBAOS;
 import ch.oli.decode.PacketReader;
 import ch.oli.ioctl.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +69,7 @@ public class OliController {
 //                startPidReceiverIfNotYetStarted(0x12); // EIT
                 return "LOCK in " + millis + " ms";
             }
-            if (millis >= 500) {
+            if (millis >= 1000) {
                 return "NO LOCK - giving up after " + millis + " ms";
             }
             Thread.sleep(10);
@@ -99,17 +99,12 @@ public class OliController {
             dmx.dmxSetPesFilter(filter);
 
             resp.setContentType("audio/mp2t");
-            byte[] buf = new byte[0];
-            long max = System.currentTimeMillis() + 10_000_000;
-            while (System.currentTimeMillis() < max) {
-
+            MyBAOS baos = new MyBAOS();
+            byte[] buf = new byte[1024];
+            while (true) {
                 // wait for PES start code 00 00 01
-                int skipped = 0;
                 while (true) {
-                    while (dmx.file.readByte() != 0) {
-                        skipped++;
-                    }
-//                    System.out.println(skipped);
+                    while (dmx.file.readByte() != 0);
                     if (dmx.file.readByte() == 0) {
                         if (dmx.file.readByte() == 1) {
                             break;
@@ -118,18 +113,92 @@ public class OliController {
                 }
                 int streamId = dmx.file.readByte() & 0xFF;
                 int pesPacketLen = dmx.file.readShort() & 0xFFFF;
-                if (buf.length != pesPacketLen) {
-                    buf = new byte[pesPacketLen];
+                baos.reset();
+                for (int remain = pesPacketLen; remain > 0; ) {
+                    int read = dmx.file.read(buf, 0, Math.min(buf.length, remain));
+                    baos.write(buf, 0, read);
+                    remain -= read;
                 }
-                int read = dmx.file.read(buf);
-                System.out.println("read " + read + " bytes");
-                PacketDecoderDVB.hexDump(buf);
-                resp.getOutputStream().write(buf, 0, read);
+                PacketReader pr = baos.asPacketReader();
+//                System.out.println("read " + pr.initialLength + " bytes");
+//                PacketDecoderDVB.hexDump(pr.wholePacket());
+                pr.skip(45 -6); // skip Header as defined in ETSI EN 300 472 V1.4.1 (2017-04)
+
+                int data_identifier = pr.pull8();
+                while (pr.remain() >= 2) {
+                    int data_unit_id = pr.pull8();
+                    int data_unit_length = pr.pull8(); // sould always be 0x2c = 44 decimal
+                    PacketReader prDataUnit = pr.nextBytesAsPR(data_unit_length);
+                    {
+                        int tmp = prDataUnit.pull8();
+                        int field_parity = (tmp >> 5) & 1;
+                        int line_offset = tmp & 31;
+                        int framing_code = prDataUnit.pull8(); // should be binary 11100100 (=0x4e)
+                        int b4 = prDataUnit.pull8();
+                        int b5 = prDataUnit.pull8();
+                        int mpag = bytereverse((hamming_8_4(b4) << 4) | hamming_8_4(b5));
+                        int magazine = (mpag & 7) == 0 ? 8 : (mpag & 7);
+                        int row = mpag >> 3;
+                        StringBuilder sb = new StringBuilder(40);
+                        for (int i = 0; i < 40; i++) {
+                            int b = prDataUnit.pull8();
+                            b = bytereverse(b) & 0x7f;
+                            sb.append((char) b);
+                        }
+                        if (row <= 23) {
+                            System.out.format("%02x Mag %d Row %d %s\n", framing_code, magazine, row, sb);
+                        }
+                    }
+                }
+
+                resp.getOutputStream().write(pr.buf, pr.initialOffset, pr.initialLength);
                 resp.getOutputStream().flush();
-                System.out.println("wrote " + read + " bytes");
+//                System.out.println("wrote " + pr.initialLength + " bytes");
             }
         } catch(Exception ex) {
             ex.printStackTrace();
+        }
+    }
+
+    private int decodeHamming8_4(int input) {
+        int decoded = 0;
+        int shift = 1;
+        while (input > 0) {
+            if ((input & 1) > 0) {
+                decoded |= shift;
+            }
+            shift <<= 1;
+            input >>= 2;
+        }
+        return decoded;
+    }
+
+    public int bytereverse(int n) {
+        n = (((n >> 1) & 0x55) | ((n << 1) & 0xaa));
+        n = (((n >> 2) & 0x33) | ((n << 2) & 0xcc));
+        n = (((n >> 4) & 0x0f) | ((n << 4) & 0xf0));
+        return n;
+    }
+
+    public int hamming_8_4(int a) {
+        switch (a) {
+            case 0xA8: return  0;
+            case 0x0B: return  1;
+            case 0x26: return  2;
+            case 0x85: return  3;
+            case 0x92: return  4;
+            case 0x31: return  5;
+            case 0x1C: return  6;
+            case 0xBF: return  7;
+            case 0x40: return  8;
+            case 0xE3: return  9;
+            case 0xCE: return 10;
+            case 0x6D: return 11;
+            case 0x7A: return 12;
+            case 0xD9: return 13;
+            case 0xF4: return 14;
+            case 0x57: return 15;
+            default  : return -1;     // decoding error , not yet corrected
         }
     }
 
