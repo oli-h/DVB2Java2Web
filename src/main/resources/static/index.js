@@ -26,9 +26,10 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     index.events = [];
 
     index.tune = function() {
-        pmtMap = {};
         index.tuneResponse = "...";
         $http.post("tune", index.tuneParams).then(function(resp) {
+            msgQueue = [];
+            pmtMap = {};
             index.tuneResponse =  resp.data;
         });
     }

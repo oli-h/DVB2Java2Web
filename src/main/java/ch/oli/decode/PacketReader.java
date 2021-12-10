@@ -105,6 +105,14 @@ public class PacketReader {
         return new String(buf, idx - length, length, charset);
     }
 
+    public void pull(int length, byte[] dest, int destPos) {
+        if (remain < length) {
+            throw new RuntimeException("not enough bytes");
+        }
+        System.arraycopy(buf, idx, dest, destPos, length);
+        remain -= length;
+        idx += length;
+    }
 
     public void skip(int length) {
         if (remain < length) {

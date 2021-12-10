@@ -40,6 +40,7 @@
                     <a ng-href="teletext.html#{{si.elementary_PID}}" target="_blank">
                         {{si.stream_identifier}} {{si.stream_type_txt}}
                         <b ng-show="si.teletextInitialPage">Teletext</b>
+                        <b ng-show="si.stream_type==3">MP2 Audio</b>
                     </a>
                 </div>
             </td>
