@@ -1,7 +1,5 @@
 package ch.oli.web;
 
-import ch.oli.decode.MyBAOS;
-import ch.oli.decode.PacketDecoderDVB;
 import ch.oli.decode.PacketReader;
 import ch.oli.ioctl.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,7 +86,7 @@ public class OliController {
     @GetMapping(value = "/pes/{pid}")
     public void stream(@PathVariable int pid, HttpServletResponse resp) {
         try (DevDvbDemux dmx = fe.openDedmux()) {
-            dmx.dmxSetBufferSize(8192);
+            dmx.dmxSetBufferSize(256 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
             filter.pid = (short) pid;
@@ -99,51 +97,69 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
+//            resp.setContentType("video/mpeg");
+
 //            new DecodeTeletext().decode(dmx, resp.getOutputStream());
+//            new Mpeg2videoDecoder(dmx, resp.getOutputStream()).decode();
+            new H264Decoder(dmx, resp.getOutputStream()).decode();;
 
-            resp.setContentType("audio/mpeg");
-            MyBAOS baos = new MyBAOS();
-            byte[] buf = new byte[1024];
-            while (true) {
-                while (true) {
-                    int skipped=0;
-                    while (true) {
-                        int i = dmx.file.readByte();
-                        if (i == 0) {
-                            break;
-                        }
-                        skipped++;
-                    }
-                    if (skipped > 0) {
-                        System.out.println("hmmm need to skip " + skipped);
-                    }
-                    if (dmx.file.readByte() == 0) {
-                        if (dmx.file.readByte() == 1) {
-                            break;
-                        }
-                    }
-                }
-                int streamId = dmx.file.readByte() & 0xFF;
-                int pesPacketLen = dmx.file.readShort() & 0xFFFF;
-                baos.reset();
-                for (int remain = pesPacketLen; remain > 0; ) {
-                    int read = dmx.file.read(buf, 0, Math.min(buf.length, remain));
-                    baos.write(buf, 0, read);
-                    remain -= read;
-                }
-                PacketReader pr = baos.asPacketReader();
-                int pesHeader1   = pr.pull8();
-                int pesHeader2   = pr.pull8();
-                int pesHeaderLen = pr.pull8();
-                System.out.printf("streamId=%02x, pesPacketLen=%d %02x %02x pesHeaderLen=%d\n", streamId, pesPacketLen, pesHeader1, pesHeader2, pesHeaderLen);
-                pr.skip(pesHeaderLen);
+//            MyBAOS baos = new MyBAOS();
+//            byte[] buf = new byte[4 * 1024];
+//            while (true) {
+//                while (true) {
+//                    int skipped = 0;
+//                    while (true) {
+//                        int i = dmx.file.readByte();
+//                        if (i == 0) {
+//                            break;
+//                        }
+//                        skipped++;
+//                    }
+//                    if (skipped > 0) {
+////                        System.out.println("hmmm need to skip " + skipped);
+//                    }
+//                    if (dmx.file.readByte() == 0) {
+//                        if (dmx.file.readByte() == 1) {
+//                            break;
+//                        }
+//                    }
+//                }
+//                int streamId = dmx.file.readByte() & 0xFF;
+//                if (streamId != 0xE0) {
+//                    continue;
+//                }
+//                int pesPacketLen = dmx.file.readShort() & 0xFFFF;
+//                if (pesPacketLen != 0) {
+//                    continue;
+//                }
+//                System.out.printf("streamId=%02x, pesPacketLen=%d", streamId, pesPacketLen);
+//                baos.reset();
+//                for (int remain = pesPacketLen; remain > 0; ) {
+//                    int read = dmx.file.read(buf, 0, Math.min(buf.length, remain));
+//                    baos.write(buf, 0, read);
+//                    remain -= read;
+//                }
+//                PacketReader pr = baos.asPacketReader();
+//                int pesHeader1   = pr.pull8();
+//                int pesHeader2   = pr.pull8();
+//                int pesHeaderLen = pr.pull8();
+//                System.out.printf(" hdr1=%02x hdr2=%02x pesHeaderLen=%d\n", pesHeader1, pesHeader2, pesHeaderLen);
+//                pr.skip(pesHeaderLen);
+//
+//                byte[] elementaryStream = pr.nextBytesAsPR(pr.remain()).wholePacket();
+//                resp.getOutputStream().write(elementaryStream);
+//                resp.getOutputStream().flush();
+////                PacketDecoderDVB.hexDump(elementaryStream);
+//                System.out.println();
+//            }
 
-                byte[] elementaryStream = pr.nextBytesAsPR(pr.remain()).wholePacket();
-                resp.getOutputStream().write(elementaryStream);
-                resp.getOutputStream().flush();
-                PacketDecoderDVB.hexDump(elementaryStream);
-                System.out.println();
-            }
+//            for (int i = 0; i < 1_000_000; i++) {
+//                int read = dmx.file.read(buf);
+//                System.out.printf("read=%d\n", read);
+//                resp.getOutputStream().write(buf, 0, read);
+//                resp.getOutputStream().flush();
+//            }
+
 
         } catch(Exception ex) {
             ex.printStackTrace();
