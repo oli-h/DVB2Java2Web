@@ -75,6 +75,96 @@ public class OliController {
         }
     }
 
+    @GetMapping("/tune")
+    public TuneParams tune() {
+        TuneParams tuneParams = new TuneParams();
+        dtv_properties dtvprops = new dtv_properties();
+        dtvprops.addStatsCmd(C.CMD.DTV_FREQUENCY           ); // Index 0
+        dtvprops.addStatsCmd(C.CMD.DTV_SYMBOL_RATE         ); // Index 1
+        dtvprops.addStatsCmd(C.CMD.DTV_MODULATION          ); // Index 2
+        fe.feGetProperty(dtvprops);
+        tuneParams.frequency   = dtvprops.getPropsArray()[0].u.data;
+        tuneParams.symbol_rate = dtvprops.getPropsArray()[1].u.data;
+        tuneParams.modulation  = C.fe_modulation.values()[dtvprops.getPropsArray()[2].u.data];
+        return tuneParams;
+    }
+
+    public static class TuneStats {
+        public int status                      ;
+        public boolean statusHasSignal         ;
+        public boolean statusHasCarrier        ;
+        public boolean statusHasInnerCodeStable;
+        public boolean statusHasSync           ;
+        public boolean statusHasLock           ;
+        public boolean statusTimedOut          ;
+        public Float signalStrength_dBm        ;
+        public Float signalNoiceRatio_dBm      ;
+        public Long  preErrorBitCount          ;
+        public Long  preTotalBitCount          ;
+        public Long  postErrorBitCount         ;
+        public Long  postTotalBitCount         ;
+        public Long  errorBlockCount           ;
+        public Long  totalBlockCount           ;
+    }
+
+    @GetMapping("/tuneStats")
+    public TuneStats tuneStats() {
+        TuneStats tuneStats = new TuneStats();
+
+        dtv_properties dtvprops = new dtv_properties();
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_SIGNAL_STRENGTH     ); // Index 0
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_CNR                 ); // Index 1
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_PRE_ERROR_BIT_COUNT ); // Index 2
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_PRE_TOTAL_BIT_COUNT ); // Index 3
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_POST_ERROR_BIT_COUNT); // Index 4
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_POST_TOTAL_BIT_COUNT); // Index 5
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_ERROR_BLOCK_COUNT   ); // Index 6
+        dtvprops.addStatsCmd(C.CMD.DTV_STAT_TOTAL_BLOCK_COUNT   ); // Index 7
+        fe.feGetProperty(dtvprops);
+        // assume scale=1=FE_SCALE_DECIBEL=0.001 dBm
+        if (dtvprops.getPropsArray()[0].u.st.stat[0].scale == 1) {
+            tuneStats.signalStrength_dBm   = dtvprops.getPropsArray()[0].u.st.stat[0].value / 1000f;
+        }
+        // assume scale=1=FE_SCALE_DECIBEL=0.001 dBm
+        if (dtvprops.getPropsArray()[1].u.st.stat[0].scale == 1) {
+            tuneStats.signalNoiceRatio_dBm = dtvprops.getPropsArray()[1].u.st.stat[0].value / 1000f;
+        }
+        // assume scale=3=FE_SCALE_COUNTER
+        if (dtvprops.getPropsArray()[2].u.st.stat[0].scale == 3) {
+            tuneStats.preErrorBitCount = dtvprops.getPropsArray()[2].u.st.stat[0].value;
+        }
+        // assume scale=3=FE_SCALE_COUNTER
+        if (dtvprops.getPropsArray()[3].u.st.stat[0].scale == 3) {
+            tuneStats.preTotalBitCount = dtvprops.getPropsArray()[3].u.st.stat[0].value;
+        }
+        // assume scale=3=FE_SCALE_COUNTER
+        if (dtvprops.getPropsArray()[4].u.st.stat[0].scale == 3) {
+            tuneStats.postErrorBitCount = dtvprops.getPropsArray()[4].u.st.stat[0].value;
+        }
+        // assume scale=3=FE_SCALE_COUNTER
+        if (dtvprops.getPropsArray()[5].u.st.stat[0].scale == 3) {
+            tuneStats.postTotalBitCount = dtvprops.getPropsArray()[5].u.st.stat[0].value;
+        }
+        // assume scale=3=FE_SCALE_COUNTER
+        if (dtvprops.getPropsArray()[6].u.st.stat[0].scale == 3) {
+            tuneStats.errorBlockCount = dtvprops.getPropsArray()[6].u.st.stat[0].value;
+        }
+        // assume scale=3=FE_SCALE_COUNTER
+        if (dtvprops.getPropsArray()[7].u.st.stat[0].scale == 3) {
+            tuneStats.totalBlockCount = dtvprops.getPropsArray()[7].u.st.stat[0].value;
+        }
+
+        tuneStats.status = fe.feReadStatus();
+        tuneStats.statusHasSignal          = (tuneStats.status & 0x01) > 0;
+        tuneStats.statusHasCarrier         = (tuneStats.status & 0x02) > 0;
+        tuneStats.statusHasInnerCodeStable = (tuneStats.status & 0x04) > 0;
+        tuneStats.statusHasSync            = (tuneStats.status & 0x08) > 0;
+        tuneStats.statusHasLock            = (tuneStats.status & 0x10) > 0;
+        tuneStats.statusTimedOut           = (tuneStats.status & 0x20) > 0;
+
+        return tuneStats;
+    }
+
     @PostMapping(value = "/stopFrontend")
     public void stopFrontend() {
         if (fe != null) {
