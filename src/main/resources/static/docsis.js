@@ -5,31 +5,35 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
     var freq;
     docsis.channels = [];
 
-    function collectDocsisStats() {
-        $http.get("docsisStats").then(function(resp) {
+    function collectDocsisStats(adapter) {
+        $http.get("docsisStats?adapter=" + adapter).then(function(resp) {
             var channel = docsis.channels.find(c => c.frequency == resp.data.frequency);
             if (channel) {
                 Object.assign(channel, resp.data);
             } else {
                 docsis.channels.push(resp.data)
             }
-            tuneNext();
+        }).finally(function() {
+            tuneNext(adapter);
         });
     }
 
-    function tuneNext() {
+    function tuneNext(adapter) {
         if (freq >= 538 && freq < 722) {
             freq += 8;
         } else {
             freq = 538
         }
         const tuneParams = { frequency: freq * 1000000, symbol_rate: 6952000, modulation: "QAM_256" }
-        $http.post("tune", tuneParams).then(function(resp) {
-            collectDocsisStats();
+        $http.post("tune?adapter=" + adapter, tuneParams).then(function(resp) {
+            collectDocsisStats(adapter);
         });
     }
 
-    tuneNext();
+    tuneNext(1);
+    tuneNext(2);
+    tuneNext(3);
+    tuneNext(4);
 
     docsis.totalLoad = function() {
         var sumDocsis=0;

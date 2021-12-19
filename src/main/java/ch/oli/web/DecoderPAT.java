@@ -10,13 +10,13 @@ public class DecoderPAT {
     @Autowired
     private ServerWebSocketHandler serverWebSocketHandler;
 
-    public void decode(PacketReader prSection, int something, OliController oliController) {
+    public void decode(PacketReader prSection, int something, OliController oliController, int adapter) {
         ProgramAssociation pa = new ProgramAssociation(); // re-use in loop
         while (prSection.remain() > 4) {
             pa.service_id = prSection.pull16();
             pa.pmt_pid    = prSection.pull16() & 0x1FFF;
             serverWebSocketHandler.broadcast(pa);
-            oliController.startPidReceiverIfNotYetStarted(pa.pmt_pid);
+            oliController.startPidReceiverIfNotYetStarted(pa.pmt_pid, adapter);
         }
         // 4 bytes remain CRC - ignored
     }

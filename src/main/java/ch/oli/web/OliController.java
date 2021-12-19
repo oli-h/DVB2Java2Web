@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 public class OliController {
 
-    private DevDvbFrontend fe;
+    private DevDvbFrontend[] fe = new DevDvbFrontend[16];
 
     @Autowired
     private DecoderPAT decoderPAT;
@@ -37,10 +37,10 @@ public class OliController {
     }
 
     @PostMapping(value = "/tune", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String tune(@RequestBody TuneParams tuneParams) throws Exception {
+    public String tune(@RequestBody TuneParams tuneParams, @RequestParam(defaultValue = "1") int adapter) throws Exception {
         stopAllRunningPidReceivers();
-        stopFrontend();
-        fe = new DevDvbFrontend(1);
+        stopFrontend(adapter);
+        fe[adapter] = new DevDvbFrontend(adapter);
 
         long t0 = System.currentTimeMillis();
 
@@ -56,11 +56,11 @@ public class OliController {
         dtvprops.addCmd(C.CMD.DTV_INVERSION      , inversion            .ordinal());
         dtvprops.addCmd(C.CMD.DTV_INNER_FEC      , fec                  .ordinal());
         dtvprops.addCmd(C.CMD.DTV_TUNE           , 0);
-        fe.feSetProperty(dtvprops);
+        fe[adapter].feSetProperty(dtvprops);
 
         while (true) {
             long millis = System.currentTimeMillis() - t0;
-            int status = fe.feReadStatus();
+            int status = fe[adapter].feReadStatus();
             if (status == 31) {
                 return "LOCKED in " + millis + " ms";
             }
@@ -72,13 +72,13 @@ public class OliController {
     }
 
     @GetMapping("/tune")
-    public TuneParams tune() {
+    public TuneParams tune(@RequestParam(defaultValue = "1") int adapter) {
         TuneParams tuneParams = new TuneParams();
         dtv_properties dtvprops = new dtv_properties();
         dtvprops.addStatsCmd(C.CMD.DTV_FREQUENCY           ); // Index 0
         dtvprops.addStatsCmd(C.CMD.DTV_SYMBOL_RATE         ); // Index 1
         dtvprops.addStatsCmd(C.CMD.DTV_MODULATION          ); // Index 2
-        fe.feGetProperty(dtvprops);
+        fe[adapter].feGetProperty(dtvprops);
         tuneParams.frequency = dtvprops.getPropsArray()[0].u.data;
         tuneParams.symbol_rate = dtvprops.getPropsArray()[1].u.data;
         tuneParams.modulation = C.fe_modulation.values()[dtvprops.getPropsArray()[2].u.data];
@@ -104,7 +104,7 @@ public class OliController {
     }
 
     @GetMapping("/tuneStats")
-    public TuneStats tuneStats() {
+    public TuneStats tuneStats(@RequestParam(defaultValue = "1") int adapter) {
         TuneStats tuneStats = new TuneStats();
 
         dtv_properties dtvprops = new dtv_properties();
@@ -116,7 +116,7 @@ public class OliController {
         dtvprops.addStatsCmd(C.CMD.DTV_STAT_POST_TOTAL_BIT_COUNT); // Index 5
         dtvprops.addStatsCmd(C.CMD.DTV_STAT_ERROR_BLOCK_COUNT   ); // Index 6
         dtvprops.addStatsCmd(C.CMD.DTV_STAT_TOTAL_BLOCK_COUNT   ); // Index 7
-        fe.feGetProperty(dtvprops);
+        fe[adapter].feGetProperty(dtvprops);
         // assume scale=1=FE_SCALE_DECIBEL=0.001 dBm
         if (dtvprops.getPropsArray()[0].u.st.stat[0].scale == 1) {
             tuneStats.signalStrength_dBm = dtvprops.getPropsArray()[0].u.st.stat[0].value / 1000f;
@@ -150,7 +150,7 @@ public class OliController {
             tuneStats.totalBlockCount = dtvprops.getPropsArray()[7].u.st.stat[0].value;
         }
 
-        tuneStats.status = fe.feReadStatus();
+        tuneStats.status = fe[adapter].feReadStatus();
         tuneStats.statusHasSignal          = (tuneStats.status & 0x01) > 0;
         tuneStats.statusHasCarrier         = (tuneStats.status & 0x02) > 0;
         tuneStats.statusHasInnerCodeStable = (tuneStats.status & 0x04) > 0;
@@ -162,10 +162,10 @@ public class OliController {
     }
 
     @PostMapping(value = "/stopFrontend")
-    public void stopFrontend() {
-        if (fe != null) {
-            fe.close();
-            fe = null;
+    public void stopFrontend(@RequestParam(defaultValue = "1") int adapter) {
+        if (fe[adapter] != null) {
+            fe[adapter].close();
+            fe[adapter] = null;
         }
     }
 
@@ -177,11 +177,11 @@ public class OliController {
     }
 
     @GetMapping("/docsisStats")
-    public DocsisStats docsisStats() throws Exception {
+    public DocsisStats docsisStats(@RequestParam(defaultValue = "1") int adapter) throws Exception {
         DocsisStats docsisStats = new DocsisStats();
-        docsisStats.frequency = tune().frequency;
+        docsisStats.frequency = tune(adapter).frequency;
 
-        try (DevDvbDemux dmx = fe.openDedmux()) {
+        try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
             dmx.dmxSetBufferSize(64 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
@@ -192,7 +192,7 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-            long tmax = System.nanoTime() + 50_000_000;
+            long tmax = System.nanoTime() + 300_000_000;
             byte[] buf = new byte[188 * 5];
             while (System.nanoTime() < tmax) {
                 int read = dmx.file.read(buf);
@@ -220,8 +220,8 @@ public class OliController {
     }
 
     @GetMapping(value = "/pes/{pid}")
-    public void stream(@PathVariable int pid, HttpServletResponse resp) {
-        try (DevDvbDemux dmx = fe.openDedmux()) {
+    public void stream(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
+        try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
             dmx.dmxSetBufferSize(256 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
@@ -312,9 +312,9 @@ public class OliController {
     }
 
     @PostMapping("/startPidReceiverIfNotYetStarted/{pid}")
-    public void startPidReceiverIfNotYetStarted(@PathVariable int pid) {
+    public void startPidReceiverIfNotYetStarted(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter) {
         pidReceivers.computeIfAbsent(pid, newPid -> {
-            PidReceiver pr = new PidReceiver(newPid);
+            PidReceiver pr = new PidReceiver(adapter, newPid);
             pr.start();
             return pr;
         });
@@ -322,10 +322,12 @@ public class OliController {
 
     public class PidReceiver extends Thread {
 
+        private final int adapter;
         private final DevDvbDemux dmx;
 
-        public PidReceiver(int pid) {
-            dmx = fe.openDedmux();
+        public PidReceiver(int adapter, int pid) {
+            this.adapter = adapter;
+            this.dmx = fe[adapter].openDedmux();
 
             dmx.dmxSetBufferSize(8192);
 
@@ -354,58 +356,57 @@ public class OliController {
         public void close() {
             dmx.close();
         }
-    }
 
+        /**
+         * PSI = "Program Specific Information"
+         * Transferred in PID 0 (PAT), PID 16 (NIT, ST), PID 17 (SDT, BAT, ST), PID 18 (EIT, ST, CIT)
+         * and some others
+         */
+        public void decodePSI(PacketReader prPU) {
+            // https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.16.01_60/en_300468v011601p.pdf
 
-    /**
-     * PSI = "Program Specific Information"
-     * Transferred in PID 0 (PAT), PID 16 (NIT, ST), PID 17 (SDT, BAT, ST), PID 18 (EIT, ST, CIT)
-     * and some others
-     */
-    public void decodePSI(PacketReader prPU) {
-        // https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.16.01_60/en_300468v011601p.pdf
+            while (prPU.hasBytes()) {
+                int table_id = prPU.pull8();
+                if (table_id == 0xFF) {
+                    break;
+                }
+                int tmp = prPU.pull16();
+                int section_length = tmp & 0xFFF; // 12 Bit
+                if (section_length > 4093) {
+                    System.out.format("ERROR: sectLen %d larger than allowed 4093. Ignoring rest of packet unit", section_length);
+                    break;
+                }
+                PacketReader prSection = prPU.nextBytesAsPR(section_length);
+                int something = prSection.pull16(); // semantic depends on table_id - still we need to decode it here
+                tmp = prSection.pull8();
+                int version_number = (tmp >> 1) & 0x1F;
+                int current_next_indicator = tmp & 1; // 1=current 0=next
+                int section_number = prSection.pull8();
+                int last_section_number = prSection.pull8();
 
-        while (prPU.hasBytes()) {
-            int table_id = prPU.pull8();
-            if (table_id == 0xFF) {
-                break;
-            }
-            int tmp = prPU.pull16();
-            int section_length = tmp & 0xFFF; // 12 Bit
-            if (section_length > 4093) {
-                System.out.format("ERROR: sectLen %d larger than allowed 4093. Ignoring rest of packet unit", section_length);
-                break;
-            }
-            PacketReader prSection = prPU.nextBytesAsPR(section_length);
-            int something = prSection.pull16(); // semantic depends on table_id - still we need to decode it here
-            tmp = prSection.pull8();
-            int version_number = (tmp >> 1) & 0x1F;
-            int current_next_indicator = tmp & 1; // 1=current 0=next
-            int section_number = prSection.pull8();
-            int last_section_number = prSection.pull8();
-
-            // in PID 0: Program Association Table (PAT)
-            if (table_id == 0x00) {
-                decoderPAT.decode(prSection, something, this);
-            }
-            // in PID 1: Conditional Access Table (CAT)
-            else if (table_id == 0x01) { // conditional_access_section"
+                // in PID 0: Program Association Table (PAT)
+                if (table_id == 0x00) {
+                    decoderPAT.decode(prSection, something, OliController.this, adapter);
+                }
+                // in PID 1: Conditional Access Table (CAT)
+                else if (table_id == 0x01) { // conditional_access_section"
 //                decodeCAT(prSection, table_id, something);
-            }
-            // in PID 16: Network Information Table (NIT)
-            else if (table_id == 0x40 || table_id == 0x41) { // actual_network (0x40) or other_network 0x41
-                decoderNIT.decode(prSection, something);
-            }
-            // in PID 17: Service Description Table (SDT)
-            else if (table_id == 0x42 || table_id == 0x46) { // actual_transport_stream (0x42) or other_transport_stream (0x46)
-                decoderSDT.decode(prSection, something);
-                // in PID 18: Event Information Table (EIT)
-            } else if (table_id >= 0x4E && table_id <= 0x6F) {
-                decoderEIT.decode(prSection, something);
-            }
-            // in some PID: Program Map Table (PMT)
-            else if (table_id == 0x02) { // program_map_section
-                decoderPMT.decode(prSection, something);
+                }
+                // in PID 16: Network Information Table (NIT)
+                else if (table_id == 0x40 || table_id == 0x41) { // actual_network (0x40) or other_network 0x41
+                    decoderNIT.decode(prSection, something);
+                }
+                // in PID 17: Service Description Table (SDT)
+                else if (table_id == 0x42 || table_id == 0x46) { // actual_transport_stream (0x42) or other_transport_stream (0x46)
+                    decoderSDT.decode(prSection, something);
+                    // in PID 18: Event Information Table (EIT)
+                } else if (table_id >= 0x4E && table_id <= 0x6F) {
+                    decoderEIT.decode(prSection, something);
+                }
+                // in some PID: Program Map Table (PMT)
+                else if (table_id == 0x02) { // program_map_section
+                    decoderPMT.decode(prSection, something);
+                }
             }
         }
     }
