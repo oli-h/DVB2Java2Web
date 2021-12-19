@@ -20,53 +20,56 @@ public class H264Decoder {
 
     public void decode() throws IOException {
         long lastBytes = 0;
-        boolean sync = false;
-        boolean blubb = false;
+        boolean currentBytesAreNal = false;
+        boolean nal7foundOnce = false;
         while (true) {
-            // wait for start-code "0x000001e0" plus "0000" for pesLength=0
-            // see http://mugenryodan.blogspot.com/2012/07/mpeg1mpeg2-start-code-table.html
-            while (true) {
-                int b = dmx.file.readUnsignedByte();
-                baos.write(b);
+            int b = dmx.file.readUnsignedByte();
+            baos.write(b);
+            lastBytes = (lastBytes << 8) | b;
 
-                lastBytes = (lastBytes << 8) | b;
-                boolean pesHeaderFound = (lastBytes & 0xffff_ffff_ffffL) == 0x0000_01e0_0000L;
-                boolean nalUnitHeaderFound = (lastBytes & 0xffff_ffffL) == 0x0000_0001L;
-                if (pesHeaderFound | nalUnitHeaderFound) {
-//                    System.out.printf("%12x",lastBytes);
-                    if (sync) {
-                        if (pesHeaderFound) {
-                            baos.removeBytesFromTail(6);
-                        } else if (nalUnitHeaderFound) {
-                            baos.removeBytesFromTail(4);
-                        }
-                        int nri = (baos.buf()[4]>>5) & 3;
-                        int nalUnitType = baos.buf()[4] & 0x1F;
-                        if (nalUnitType == 7) {
-                            blubb = true;
-                        }
-                        if (blubb) {
-                            System.out.printf("NAL Unit NRI=%d Type=%02x len=%s\n", nri, nalUnitType, baos.size());
-                            baos.writeTo(os);
-                        }
-                    }
-                    sync = true;
-                    baos.reset();
-                    if (nalUnitHeaderFound) {
-                        baos.write(0);
-                        baos.write(0);
-                        baos.write(0);
-                        baos.write(1);
-                    }
+            boolean pesHeaderFound = (lastBytes & 0xffff_ffff_ffffL) == 0x0000_01e0_0000L;
+            boolean nalUnitHeaderFound = (lastBytes & 0xffff_ffffL) == 0x0000_0001L;
+
+            if (!pesHeaderFound && !nalUnitHeaderFound) {
+                continue;
+            }
+            // ... we found header-sync-bytes-battern
+
+            if (currentBytesAreNal) {
+                // remove the currently found header-bytes from the buffer as they belong to the next PES-Packet-Header or NAL-Unit
+                int nri = (baos.buf()[4] >> 5) & 3;
+                int nalUnitType = baos.buf()[4] & 0x1F;
+                if (nalUnitType == 7) {
+                    nal7foundOnce = true;
+                }
+                if (nal7foundOnce) {
+                    System.out.printf("NAL Unit NRI=%d Type=%02x len=%s\n", nri, nalUnitType, baos.size());
                     if (pesHeaderFound) {
-                        dmx.file.readUnsignedShort();  // PES Header Flags
-                        int pesHeadLen = dmx.file.readUnsignedByte(); // PES Header Length
-                        for (int i = 0; i < pesHeadLen; i++) {  // skip rest of PES Header
-                            dmx.file.readUnsignedByte();
-                        }
+                        baos.removeBytesFromTail(6);
+                    } else { // nalUnitHeaderFoundis true
+                        baos.removeBytesFromTail(4);
                     }
+                    baos.writeTo(os);
+                }
+                currentBytesAreNal = false;
+            }
+
+            if (nalUnitHeaderFound) {
+                currentBytesAreNal = true;
+                baos.reset();
+                baos.write(0);
+                baos.write(0);
+                baos.write(0);
+                baos.write(1);
+
+            } else { // pesHeaderFound is true
+                dmx.file.readUnsignedShort();  // PES Header Flags
+                int pesHeadLen = dmx.file.readUnsignedByte(); // PES Header Length
+                for (int i = 0; i < pesHeadLen; i++) {  // skip rest of PES Header
+                    dmx.file.readUnsignedByte();
                 }
             }
         }
+
     }
 }
