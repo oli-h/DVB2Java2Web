@@ -192,9 +192,9 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-            long tmax = System.currentTimeMillis() + 10_000;
-            byte[] buf = new byte[188 * 10];
-            while (System.currentTimeMillis() < tmax) {
+            long tmax = System.nanoTime() + 50_000_000;
+            byte[] buf = new byte[188 * 5];
+            while (System.nanoTime() < tmax) {
                 int read = dmx.file.read(buf);
                 if ((read % 188) != 0) {
                     throw new RuntimeException("Upps - not multiple of 188");
