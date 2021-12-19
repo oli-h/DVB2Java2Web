@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html ng-app="dvbApp">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"
+            integrity="sha512-7oYXeK0OxTFxndh0erL8FsjGvrl2VMDor6fVqzlLGfwOQQqTbYsGPv4ZZ15QHfSk80doyaM0ZJdvkyDcVO7KFA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="docsis.js"></script>
+    <link rel="stylesheet" href="oli.css">
+</head>
+<body ng-controller="DocsisController as docsis">
+
+Total load: {{docsis.totalLoad()*100 | number:0}} %
+<table>
+    <tr>
+        <th>Freq</th>
+        <th>Docsis</th>
+        <th>Filler</th>
+        <th>unknown</th>
+    </tr>
+    <tr ng-repeat="channel in docsis.channels">
+        <td>{{channel.frequency}}</td>
+        <td>{{channel.countDocsisPackets}}</td>
+        <td>{{channel.countFillerPackets}}</td>
+        <td>{{channel.countUnknownPackets}}</td>
+        <td>{{channel.countDocsisPackets*100/(channel.countDocsisPackets+channel.countFillerPackets) | number:0}} %</td>
+        <td>
+            <div style="display:inline-block; width:{{channel.countDocsisPackets/10}}px; background-color:#DFD">&nbsp;</div><div style="display:inline-block; width:{{channel.countFillerPackets/10}}px; background-color:#DDD">&nbsp;</div>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

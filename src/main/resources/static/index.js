@@ -30,7 +30,13 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
         $http.post("tune", index.tuneParams).then(function(resp) {
             msgQueue = [];
             pmtMap = {};
-            index.tuneResponse =  resp.data;
+            index.tuneResponse = resp.data;
+            if(resp.data.includes("LOCKED in")) {
+                $http.post("startPidReceiverIfNotYetStarted/0" ); // 0x00 PAT
+                $http.post("startPidReceiverIfNotYetStarted/16"); // 0x16 NIT
+                $http.post("startPidReceiverIfNotYetStarted/17"); // 0x11 SDT
+//                $http.post("startPidReceiverIfNotYetStarted/18"); // 0x12 EIT
+            }
         });
     }
     index.stopFrontend = () => {

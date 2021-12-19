@@ -62,11 +62,7 @@ public class OliController {
             long millis = System.currentTimeMillis() - t0;
             int status = fe.feReadStatus();
             if (status == 31) {
-                startPidReceiverIfNotYetStarted(0x00); // PAT
-                startPidReceiverIfNotYetStarted(0x10); // NIT
-                startPidReceiverIfNotYetStarted(0x11); // SDT
-//                startPidReceiverIfNotYetStarted(0x12); // EIT
-                return "LOCK in " + millis + " ms";
+                return "LOCKED in " + millis + " ms";
             }
             if (millis >= 1000) {
                 return "NO LOCK - giving up after " + millis + " ms";
@@ -83,9 +79,9 @@ public class OliController {
         dtvprops.addStatsCmd(C.CMD.DTV_SYMBOL_RATE         ); // Index 1
         dtvprops.addStatsCmd(C.CMD.DTV_MODULATION          ); // Index 2
         fe.feGetProperty(dtvprops);
-        tuneParams.frequency   = dtvprops.getPropsArray()[0].u.data;
+        tuneParams.frequency = dtvprops.getPropsArray()[0].u.data;
         tuneParams.symbol_rate = dtvprops.getPropsArray()[1].u.data;
-        tuneParams.modulation  = C.fe_modulation.values()[dtvprops.getPropsArray()[2].u.data];
+        tuneParams.modulation = C.fe_modulation.values()[dtvprops.getPropsArray()[2].u.data];
         return tuneParams;
     }
 
@@ -123,7 +119,7 @@ public class OliController {
         fe.feGetProperty(dtvprops);
         // assume scale=1=FE_SCALE_DECIBEL=0.001 dBm
         if (dtvprops.getPropsArray()[0].u.st.stat[0].scale == 1) {
-            tuneStats.signalStrength_dBm   = dtvprops.getPropsArray()[0].u.st.stat[0].value / 1000f;
+            tuneStats.signalStrength_dBm = dtvprops.getPropsArray()[0].u.st.stat[0].value / 1000f;
         }
         // assume scale=1=FE_SCALE_DECIBEL=0.001 dBm
         if (dtvprops.getPropsArray()[1].u.st.stat[0].scale == 1) {
@@ -173,6 +169,56 @@ public class OliController {
         }
     }
 
+    public static class DocsisStats {
+        public int frequency;
+        public int countDocsisPackets;
+        public int countFillerPackets;
+        public int countUnknownPackets;
+    }
+
+    @GetMapping("/docsisStats")
+    public DocsisStats docsisStats() throws Exception {
+        DocsisStats docsisStats = new DocsisStats();
+        docsisStats.frequency = tune().frequency;
+
+        try (DevDvbDemux dmx = fe.openDedmux()) {
+            dmx.dmxSetBufferSize(64 * 1024);
+
+            dmx_pes_filter_params filter = new dmx_pes_filter_params();
+            filter.pid = (short) 0x2000;
+            filter.input = dmx_pes_filter_params.dmx_input.DMX_IN_FRONTEND;
+            filter.output = dmx_pes_filter_params.dmx_output.DMX_OUT_TSDEMUX_TAP;
+            filter.pes_type = dmx_pes_filter_params.dmx_ts_pes.DMX_PES_OTHER;
+            filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
+            dmx.dmxSetPesFilter(filter);
+
+            long tmax = System.currentTimeMillis() + 10_000;
+            byte[] buf = new byte[188 * 10];
+            while (System.currentTimeMillis() < tmax) {
+                int read = dmx.file.read(buf);
+                if ((read % 188) != 0) {
+                    throw new RuntimeException("Upps - not multiple of 188");
+                }
+                for (int i = 0; i < read; i += 188) {
+                    if (buf[i] != 0x47) {
+                        throw new RuntimeException("Upps - no sync-byte 0x47 at packed start");
+                    }
+
+                    int pid = ((buf[i + 1] & 0x1F) << 8) | (buf[i + 2] & 0xFF);
+                    if (pid == 0x1FFE) {
+                        docsisStats.countDocsisPackets++;
+                    } else if (pid == 0x1FFF) {
+                        docsisStats.countFillerPackets++;
+                    } else {
+                        docsisStats.countUnknownPackets++;
+                    }
+                }
+            }
+        }
+
+        return docsisStats;
+    }
+
     @GetMapping(value = "/pes/{pid}")
     public void stream(@PathVariable int pid, HttpServletResponse resp) {
         try (DevDvbDemux dmx = fe.openDedmux()) {
@@ -191,7 +237,7 @@ public class OliController {
 
 //            new DecodeTeletext().decode(dmx, resp.getOutputStream());
 //            new Mpeg2videoDecoder(dmx, resp.getOutputStream()).decode();
-            new H264Decoder(dmx, resp.getOutputStream()).decode();;
+            new H264Decoder(dmx, resp.getOutputStream()).decode();
 
 //            MyBAOS baos = new MyBAOS();
 //            byte[] buf = new byte[4 * 1024];
@@ -251,7 +297,7 @@ public class OliController {
 //            }
 
 
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
@@ -265,7 +311,8 @@ public class OliController {
         }
     }
 
-    public void startPidReceiverIfNotYetStarted(int pid) {
+    @PostMapping("/startPidReceiverIfNotYetStarted/{pid}")
+    public void startPidReceiverIfNotYetStarted(@PathVariable int pid) {
         pidReceivers.computeIfAbsent(pid, newPid -> {
             PidReceiver pr = new PidReceiver(newPid);
             pr.start();
