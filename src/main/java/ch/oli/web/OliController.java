@@ -38,7 +38,7 @@ public class OliController {
 
     @PostMapping(value = "/tune", produces = MediaType.TEXT_PLAIN_VALUE)
     public String tune(@RequestBody TuneParams tuneParams, @RequestParam(defaultValue = "1") int adapter) throws Exception {
-        stopAllRunningPidReceivers();
+//        stopAllRunningPidReceivers();
         stopFrontend(adapter);
         fe[adapter] = new DevDvbFrontend(adapter);
 
@@ -65,6 +65,7 @@ public class OliController {
                 return "LOCKED in " + millis + " ms";
             }
             if (millis >= 1000) {
+                stopFrontend(adapter);
                 return "NO LOCK - giving up after " + millis + " ms";
             }
             Thread.sleep(10);
@@ -219,6 +220,24 @@ public class OliController {
         return docsisStats;
     }
 
+    @GetMapping(value = "/sct/{pid}")
+    public void streamSections(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
+        try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
+            dmx.dmxSetBufferSize(256 * 1024);
+
+            dmx_sct_filter_params filter = new dmx_sct_filter_params();
+            filter.pid = (short) pid;
+            filter.flags = dmx_sct_filter_params.DMX_CHECK_CRC | dmx_sct_filter_params.DMX_IMMEDIATE_START;
+            filter.timeout = 1_000;
+            dmx.dmxSetFilter(filter);
+
+            new DocsicDecoder(dmx, resp.getOutputStream()).decode();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     @GetMapping(value = "/pes/{pid}")
     public void stream(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
         try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
@@ -233,11 +252,12 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-//            resp.setContentType("video/mpeg");
+            resp.setContentType("video/mpeg2video");
 
 //            new DecodeTeletext().decode(dmx, resp.getOutputStream());
-//            new Mpeg2videoDecoder(dmx, resp.getOutputStream()).decode();
-            new H264Decoder(dmx, resp.getOutputStream()).decode();
+            new Mpeg2videoDecoderNeu(dmx, resp.getOutputStream()).decode();
+//            new H264Decoder(dmx, resp.getOutputStream()).decode();
+//            new DocsicDecoder(dmx, resp.getOutputStream()).decode();
 
 //            MyBAOS baos = new MyBAOS();
 //            byte[] buf = new byte[4 * 1024];
@@ -323,10 +343,12 @@ public class OliController {
     public class PidReceiver extends Thread {
 
         private final int adapter;
+        private final int pid;
         private final DevDvbDemux dmx;
 
         public PidReceiver(int adapter, int pid) {
             this.adapter = adapter;
+            this.pid = pid;
             this.dmx = fe[adapter].openDedmux();
 
             dmx.dmxSetBufferSize(8192);
@@ -351,6 +373,7 @@ public class OliController {
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+            pidReceivers.remove(pid);
         }
 
         public void close() {

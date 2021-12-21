@@ -10,13 +10,14 @@ public class Mpeg2videoDecoder {
 
     private final DevDvbDemux dmx;
     private final DataOutputStream os;
+    private boolean pesHeaderFound = false;
 
     public Mpeg2videoDecoder(DevDvbDemux dmx, OutputStream os) {
         this.dmx = dmx;
         this.os = new DataOutputStream(os);
     }
 
-    public void decode() {
+    public void decode() throws IOException {
         int startCode = 0;
         while (true) {
             // wait for start-code "0x000001??"
@@ -34,6 +35,10 @@ public class Mpeg2videoDecoder {
                     if (startCode >= 0x00000101 && startCode <= 0x000001af) {
                         decodeSlice();
                     } else if (startCode >= 0x000001e0 && startCode <= 0x000001ef) {
+                        if (!pesHeaderFound) {
+                            pesHeaderFound = true;
+                            os.writeInt(startCode);
+                        }
                         decodePesVideoStreamHeader();
                     } else {
                         switch (startCode) {
@@ -118,7 +123,9 @@ public class Mpeg2videoDecoder {
     private int pull8() {
         try {
             int v = dmx.file.readUnsignedByte();
-            os.writeByte(v);
+            if (pesHeaderFound) {
+                os.writeByte(v);
+            }
             return v;
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -128,7 +135,9 @@ public class Mpeg2videoDecoder {
     private int pull16() {
         try {
             int v = dmx.file.readUnsignedShort();
-            os.writeShort(v);
+            if (pesHeaderFound) {
+                os.writeShort(v);
+            }
             return v;
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -138,7 +147,9 @@ public class Mpeg2videoDecoder {
     private int pull32() {
         try {
             int v = dmx.file.readInt();
-            os.writeInt(v);
+            if (pesHeaderFound) {
+                os.writeInt(v);
+            }
             return v;
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -150,7 +161,9 @@ public class Mpeg2videoDecoder {
         try {
             while (num > 0) {
                 int read = dmx.file.read(skipBuffer, 0, Math.min(skipBuffer.length, num));
-                os.write(skipBuffer, 0, read);
+                if (pesHeaderFound) {
+                    os.write(skipBuffer, 0, read);
+                }
                 num -= read;
             }
         } catch (IOException ex) {
