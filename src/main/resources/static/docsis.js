@@ -12,6 +12,7 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
                 Object.assign(channel, resp.data);
             } else {
                 docsis.channels.push(resp.data)
+                docsis.channels.sort((c1,c2) => c1.frequency - c2.frequency);
             }
         }).finally(function() {
             tuneNext(adapter);
@@ -25,6 +26,9 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
             freq = 538
         }
         const tuneParams = { frequency: freq * 1000000, symbol_rate: 6952000, modulation: "QAM_256" }
+        if (freq < 538) {
+            tuneParams.symbol_rate = 6900000;
+        }
         $http.post("tune?adapter=" + adapter, tuneParams).then(function(resp) {
             collectDocsisStats(adapter);
         });
@@ -38,11 +42,13 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
     docsis.totalLoad = function() {
         var sumDocsis=0;
         var sumFiller=0;
+        var sumUnknown=0;
         docsis.channels.forEach(c => {
-            sumDocsis += c.countDocsisPackets;
-            sumFiller += c.countFillerPackets;
+            sumDocsis  += c.countDocsisPackets;
+            sumFiller  += c.countFillerPackets;
+            sumUnknown += c.countUnknownPackets;
         });
-        return sumDocsis/(sumDocsis+sumFiller);
+        return (sumDocsis+sumUnknown)/(sumDocsis+sumUnknown+sumFiller);
     }
 
 });

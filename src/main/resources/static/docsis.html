@@ -14,17 +14,23 @@ Total load: {{docsis.totalLoad()*100 | number:1}} %
     <tr>
         <th>Freq</th>
         <th>Docsis</th>
+        <th>Other</th>
         <th>Filler</th>
-        <th>unknown</th>
     </tr>
     <tr ng-repeat="channel in docsis.channels">
-        <td>{{channel.frequency}}</td>
-        <td>{{channel.countDocsisPackets}}</td>
-        <td>{{channel.countFillerPackets}}</td>
-        <td>{{channel.countUnknownPackets}}</td>
-        <td>{{channel.countDocsisPackets*100/(channel.countDocsisPackets+channel.countFillerPackets) | number:0}} %</td>
+        <td>{{channel.frequency/1000/1000}}</td>
+        <td style="text-align:center">{{channel.countDocsisPackets}}</td>
+        <td style="text-align:center">{{channel.countUnknownPackets}}</td>
+        <td style="text-align:center">{{channel.countFillerPackets}}</td>
+        <td>{{100*(channel.countDocsisPackets+channel.countUnknownPackets)/(channel.countDocsisPackets+channel.countUnknownPackets+channel.countFillerPackets) | number:0}} %</td>
         <td>
-            <div style="display:inline-block; width:{{channel.countDocsisPackets/20}}px; background-color:#DFD">&nbsp;</div><div style="display:inline-block; width:{{channel.countFillerPackets/20}}px; background-color:#DDD">&nbsp;</div>
+            <div style="display:inline-block; width:{{channel.countDocsisPackets/20}}px; background-color:#DFD">
+                &nbsp;
+            </div><div style="display:inline-block; width:{{channel.countUnknownPackets/20}}px; background-color:#FFD">
+                &nbsp;
+            </div><div style="display:inline-block; width:{{channel.countFillerPackets/20}}px; background-color:#DDD">
+                &nbsp;
+            </div>
         </td>
     </tr>
 </table>
