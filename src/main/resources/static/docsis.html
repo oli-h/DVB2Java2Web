@@ -13,12 +13,14 @@ Total load: {{docsis.totalLoad()*100 | number:1}} %
 <table>
     <tr>
         <th>Freq</th>
+        <th></th>
         <th>Docsis</th>
         <th>Other</th>
         <th>Filler</th>
     </tr>
     <tr ng-repeat="channel in docsis.channels">
         <td>{{channel.frequency/1000/1000}}</td>
+        <td>{{channel.tuneResp}}</td>
         <td style="text-align:center">{{channel.countDocsisPackets}}</td>
         <td style="text-align:center">{{channel.countUnknownPackets}}</td>
         <td style="text-align:center">{{channel.countFillerPackets}}</td>

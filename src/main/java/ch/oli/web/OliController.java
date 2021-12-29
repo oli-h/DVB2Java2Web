@@ -66,7 +66,7 @@ public class OliController {
             }
             if (millis >= 1000) {
                 stopFrontend(adapter);
-                return "NO LOCK - giving up after " + millis + " ms";
+                return "no lock (" + millis + " ms)";
             }
             Thread.sleep(10);
         }
@@ -183,7 +183,7 @@ public class OliController {
         docsisStats.frequency = tune(adapter).frequency;
 
         try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
-            dmx.dmxSetBufferSize(64 * 1024);
+            dmx.dmxSetBufferSize(128 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
             filter.pid = (short) 0x2000;
@@ -194,7 +194,7 @@ public class OliController {
             dmx.dmxSetPesFilter(filter);
 
             long tmax = System.nanoTime() + 300_000_000;
-            byte[] buf = new byte[188 * 5];
+            byte[] buf = new byte[188 * 20];
             while (System.nanoTime() < tmax) {
                 int read = dmx.file.read(buf);
                 if ((read % 188) != 0) {
