@@ -3,7 +3,20 @@ var dvbApp = angular.module('dvbApp', []);
 dvbApp.controller('DocsisController', function DocsisController($scope, $http, $timeout, $interval) {
     const docsis = this;
     var freq;
-    docsis.channels = [];
+    var minFreq = 538;
+    var maxFreq = 722;
+
+    docsis.rangeAll = function() {
+        minFreq = 122;
+        maxFreq = 866;
+        docsis.channels = [];
+    }
+    docsis.rangeDocsis = function() {
+        minFreq = 538;
+        maxFreq = 722;
+        docsis.channels = [];
+    }
+    docsis.rangeDocsis();
 
     function collectDocsisStats(adapter) {
         $http.get("docsisStats?adapter=" + adapter).then(function(resp) {
@@ -15,14 +28,17 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
     }
 
     function tuneNext(adapter) {
-        if (freq >= 538 && freq < 722) {
+        if (freq >= minFreq && freq < maxFreq) {
             freq += 8;
         } else {
-            freq = 538
+            freq = minFreq
         }
         const tuneParams = { frequency: freq * 1000000, symbol_rate: 6952000, modulation: "QAM_256" }
         if (freq < 538 || freq > 722) {
             tuneParams.symbol_rate = 6900000;
+        }
+        if (freq == 426) {
+            tuneParams.modulation = "QAM_64";
         }
         var channel = docsis.channels.find(c => c.frequency == tuneParams.frequency);
         if (!channel) {
@@ -46,6 +62,7 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
         });
     }
 
+    tuneNext(0);
     tuneNext(1);
     tuneNext(2);
     tuneNext(3);

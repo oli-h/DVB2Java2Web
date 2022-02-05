@@ -10,6 +10,8 @@
 <body ng-controller="DocsisController as docsis">
 
 Total load: {{docsis.totalLoad()*100 | number:1}} %
+<button ng-click="docsis.rangeDocsis()">DOCSIS Channels</button>
+<button ng-click="docsis.rangeAll()">All Channels</button>
 <table>
     <tr>
         <th>Freq</th>
@@ -26,11 +28,11 @@ Total load: {{docsis.totalLoad()*100 | number:1}} %
         <td style="text-align:center">{{channel.countFillerPackets}}</td>
         <td>{{100*(channel.countDocsisPackets+channel.countUnknownPackets)/(channel.countDocsisPackets+channel.countUnknownPackets+channel.countFillerPackets) | number:0}} %</td>
         <td>
-            <div style="display:inline-block; width:{{channel.countDocsisPackets/20}}px; background-color:#DFD">
+            <div style="display:inline-block; width:{{channel.countDocsisPackets/40}}px; background-color:#DFD">
                 &nbsp;
-            </div><div style="display:inline-block; width:{{channel.countUnknownPackets/20}}px; background-color:#FFD">
+            </div><div style="display:inline-block; width:{{channel.countUnknownPackets/40}}px; background-color:#FFD">
                 &nbsp;
-            </div><div style="display:inline-block; width:{{channel.countFillerPackets/20}}px; background-color:#DDD">
+            </div><div style="display:inline-block; width:{{channel.countFillerPackets/40}}px; background-color:#DDD">
                 &nbsp;
             </div>
         </td>
