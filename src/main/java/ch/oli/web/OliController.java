@@ -180,10 +180,10 @@ public class OliController {
     @GetMapping("/docsisStats")
     public DocsisStats docsisStats(@RequestParam(defaultValue = "1") int adapter) throws Exception {
         DocsisStats docsisStats = new DocsisStats();
-        docsisStats.frequency = tune(adapter).frequency;
+        docsisStats.frequency = (tune(adapter).frequency / 1_000_000) * 1_000_000;
 
         try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
-            dmx.dmxSetBufferSize(128 * 1024);
+            dmx.dmxSetBufferSize(256 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
             filter.pid = (short) 0x2000;
@@ -193,8 +193,8 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-            long tmax = System.nanoTime() + 300_000_000;
-            byte[] buf = new byte[188 * 20];
+            long tmax = System.nanoTime() + 1_000_000_000;
+            byte[] buf = new byte[188 * 5];
             while (System.nanoTime() < tmax) {
                 int read = dmx.file.read(buf);
                 if ((read % 188) != 0) {

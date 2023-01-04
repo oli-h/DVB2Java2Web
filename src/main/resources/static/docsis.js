@@ -3,24 +3,28 @@ var dvbApp = angular.module('dvbApp', []);
 dvbApp.controller('DocsisController', function DocsisController($scope, $http, $timeout, $interval) {
     const docsis = this;
     var freq;
-    var minFreq = 538;
-    var maxFreq = 722;
+    var minFreq, maxFreq;
 
     docsis.rangeAll = function() {
         minFreq = 122;
         maxFreq = 866;
         docsis.channels = [];
     }
+    docsis.rangeTV = function() {
+        minFreq = 122;
+        maxFreq = 506;
+        docsis.channels = [];
+    }
     docsis.rangeDocsis = function() {
         minFreq = 538;
-        maxFreq = 722;
+        maxFreq = 762;
         docsis.channels = [];
     }
     docsis.rangeDocsis();
 
     function collectDocsisStats(adapter) {
         $http.get("docsisStats?adapter=" + adapter).then(function(resp) {
-            var channel = docsis.channels.find(c => c.frequency == resp.data.frequency);
+            var channel = docsis.channels.find(c => c.frequency === resp.data.frequency);
             Object.assign(channel, resp.data);
         }).finally(function() {
             tuneNext(adapter);
@@ -33,14 +37,14 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
         } else {
             freq = minFreq
         }
-        const tuneParams = { frequency: freq * 1000000, symbol_rate: 6952000, modulation: "QAM_256" }
-        if (freq < 538 || freq > 722) {
-            tuneParams.symbol_rate = 6900000;
+        const tuneParams = { frequency: freq * 1000000, symbol_rate: 6900000, modulation: "QAM_256" }
+        if ((freq >= 538 && freq <= 722) || (freq >= 746 && freq <= 762)) {
+            tuneParams.symbol_rate = 6952000;
         }
-        if (freq == 426) {
+        if (freq === 426) {
             tuneParams.modulation = "QAM_64";
         }
-        var channel = docsis.channels.find(c => c.frequency == tuneParams.frequency);
+        var channel = docsis.channels.find(c => c.frequency === tuneParams.frequency);
         if (!channel) {
             channel = {
                 frequency: tuneParams.frequency,
@@ -62,7 +66,7 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
         });
     }
 
-    tuneNext(0);
+    // tuneNext(0);
     tuneNext(1);
     tuneNext(2);
     tuneNext(3);
