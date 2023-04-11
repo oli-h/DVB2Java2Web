@@ -12,12 +12,12 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
     }
     docsis.rangeTV = function() {
         minFreq = 122;
-        maxFreq = 506;
+        maxFreq = 458;
         docsis.channels = [];
     }
     docsis.rangeDocsis = function() {
-        minFreq = 538;
-        maxFreq = 762;
+        minFreq = 466;
+        maxFreq = 706;
         docsis.channels = [];
     }
     docsis.rangeDocsis();
@@ -38,10 +38,9 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
             freq = minFreq
         }
         const tuneParams = { frequency: freq * 1000000, symbol_rate: 6900000, modulation: "QAM_256" }
-        if ((freq >= 538 && freq <= 722) || (freq >= 746 && freq <= 762)) {
+        if (freq >= 466 && freq <= 706) {
             tuneParams.symbol_rate = 6952000;
-        }
-        if (freq === 426) {
+        } else if (freq === 426) {
             tuneParams.modulation = "QAM_64";
         }
         var channel = docsis.channels.find(c => c.frequency === tuneParams.frequency);
