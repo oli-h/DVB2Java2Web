@@ -193,7 +193,8 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-            long tmax = System.nanoTime() + 1_000_000_000;
+            long treset = System.nanoTime() +   100_000_000;
+            long tmax   = System.nanoTime() + 1_100_000_000;
             byte[] buf = new byte[188 * 5];
             while (System.nanoTime() < tmax) {
                 int read = dmx.file.read(buf);
@@ -213,6 +214,11 @@ public class OliController {
                     } else {
                         docsisStats.countUnknownPackets++;
                     }
+                }
+                if (System.nanoTime() < treset) {
+                    docsisStats.countDocsisPackets = 0;
+                    docsisStats.countFillerPackets = 0;
+                    docsisStats.countUnknownPackets = 0;
                 }
             }
         }
