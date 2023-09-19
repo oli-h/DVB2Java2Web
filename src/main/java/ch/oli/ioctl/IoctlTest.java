@@ -112,7 +112,7 @@ public class IoctlTest {
 
         // we have a LOCK
 
-        try (DevDvbDemux dmx = fe.openDedmux()) {
+        try (DevDvbDemux dmx = fe.openDemux()) {
             dmx.dmxSetBufferSize(65_536);
 
 //            dmx_pes_filter_params dmxPes = new dmx_pes_filter_params();

@@ -182,7 +182,7 @@ public class OliController {
         DocsisStats docsisStats = new DocsisStats();
         docsisStats.frequency = (tune(adapter).frequency / 1_000_000) * 1_000_000;
 
-        try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
+        try (DevDvbDemux dmx = fe[adapter].openDemux()) {
             dmx.dmxSetBufferSize(256 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
@@ -228,7 +228,7 @@ public class OliController {
 
     @GetMapping(value = "/sct/{pid}")
     public void streamSections(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
-        try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
+        try (DevDvbDemux dmx = fe[adapter].openDemux()) {
             dmx.dmxSetBufferSize(256 * 1024);
 
             dmx_sct_filter_params filter = new dmx_sct_filter_params();
@@ -246,7 +246,7 @@ public class OliController {
 
     @GetMapping(value = "/pes/{pid}")
     public void stream(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
-        try (DevDvbDemux dmx = fe[adapter].openDedmux()) {
+        try (DevDvbDemux dmx = fe[adapter].openDemux()) {
             dmx.dmxSetBufferSize(256 * 1024);
 
             dmx_pes_filter_params filter = new dmx_pes_filter_params();
@@ -355,7 +355,7 @@ public class OliController {
         public PidReceiver(int adapter, int pid) {
             this.adapter = adapter;
             this.pid = pid;
-            this.dmx = fe[adapter].openDedmux();
+            this.dmx = fe[adapter].openDemux();
 
             dmx.dmxSetBufferSize(8192);
 

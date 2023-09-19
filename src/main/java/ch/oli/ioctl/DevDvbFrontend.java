@@ -61,7 +61,7 @@ public class DevDvbFrontend implements Closeable {
         return fes.status;
     }
 
-    public DevDvbDemux openDedmux() {
+    public DevDvbDemux openDemux() {
         return new DevDvbDemux(devAdapter);
     }
 
