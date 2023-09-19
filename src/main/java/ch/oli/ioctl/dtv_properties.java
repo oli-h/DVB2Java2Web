@@ -5,7 +5,7 @@ import com.sun.jna.Union;
 
 @Structure.FieldOrder({"num", "props"})
 public class dtv_properties extends Structure {
-    // this array finall is sequential in native memory
+    // this array finally is sequential in native memory
     // private = not mapped. Mapping is done via next property "props"
     private dtv_property[] propsArray = (dtv_property[]) new dtv_property().toArray(16);
 
