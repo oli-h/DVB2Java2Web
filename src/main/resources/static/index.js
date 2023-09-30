@@ -61,9 +61,9 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     var msgQueue = [];
     $interval(() => {
         msgQueue.forEach(msg => {
-            if (msg.type == "pmt") {
+            if (msg.type === "pmt") {
                 pmtMap[msg.service_id] = msg;
-            } else if (msg.type == "eit") {
+            } else if (msg.type === "eit") {
                 var ei4s = ei4sMap[msg.service_id];
                 if (!ei4s) {
                     ei4s = ei4sMap[msg.service_id] = {
@@ -77,7 +77,7 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
                 if (!ei) {
                     ei = ei4s.eiMap[msg.event_id] = {};
                 }
-                if (ei.start_time != msg.start_time || ei.duration != msg.duration || ei.event_name != msg.event_name) {
+                if (ei.start_time !== msg.start_time || ei.duration !== msg.duration || ei.event_name !== msg.event_name) {
                     Object.assign(ei, msg);
                     ei.xpos = (ei.start_time - nowSeconds) / 400 + 50;
                     ei.width = ei.duration / 400;
@@ -85,17 +85,17 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
                         ei.width = 2;
                     }
                 }
-            } else if (msg.type == "sdt") {
+            } else if (msg.type === "sdt") {
                 serviceDescriptors[msg.service_id] = msg;
-            } else if (msg.type == "transportStream") {
+            } else if (msg.type === "transportStream") {
                 var ts = index.transportStreams.find(el => {
-                    return el.network_id == msg.network_id
-                        && el.transport_stream_id == msg.transport_stream_id
-                        && el.frequency == msg.frequency
-                        && el.modulation == msg.modulation
-                        && el.symbol_rate == msg.symbol_rate
-                        && el.FEC_inner == msg.FEC_inner
-                        && el.services.length == msg.services.length
+                    return el.network_id === msg.network_id
+                        && el.transport_stream_id === msg.transport_stream_id
+                        && el.frequency === msg.frequency
+                        && el.modulation === msg.modulation
+                        && el.symbol_rate === msg.symbol_rate
+                        && el.FEC_inner === msg.FEC_inner
+                        && el.services.length === msg.services.length
                 });
                 if (!ts) {
                     index.transportStreams.push(msg);
