@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
@@ -35,6 +38,15 @@ public class OliController {
         public int symbol_rate;
         public C.fe_modulation modulation;
     }
+
+    private final InetSocketAddress addr;
+    private final DatagramSocket udpSocket;
+
+    public OliController() throws Exception {
+        addr = new InetSocketAddress("127.0.0.1", 5555);
+        udpSocket = new DatagramSocket(5555);
+    }
+
 
     @PostMapping(value = "/tune", produces = MediaType.TEXT_PLAIN_VALUE)
     public String tune(@RequestBody TuneParams tuneParams, @RequestParam(defaultValue = "1") int adapter) throws Exception {
@@ -209,6 +221,8 @@ public class OliController {
                     int pid = ((buf[i + 1] & 0x1F) << 8) | (buf[i + 2] & 0xFF);
                     if (pid == 0x1FFE) {
                         docsisStats.countDocsisPackets++;
+//                        DatagramPacket udp = new DatagramPacket(buf, i, 188,addr);
+//                        udpSocket.send(udp);
                     } else if (pid == 0x1FFF) {
                         docsisStats.countFillerPackets++;
                     } else {
