@@ -1,34 +1,23 @@
 package ch.oli.ioctl;
 
 import java.io.Closeable;
-import java.io.FileDescriptor;
-import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
 
 public class DevDvbFrontend implements Closeable {
-
     public final String devAdapter;
-    private final RandomAccessFile file;
     private final int fdFrontend;
 
     public DevDvbFrontend(int adapter) {
-        try {
-            Field field = FileDescriptor.class.getDeclaredField("fd");
-            field.setAccessible(true);
-            devAdapter = "/dev/dvb/adapter" + adapter;
-            file = new RandomAccessFile(devAdapter + "/frontend0", "rw");
-            fdFrontend = (int) field.get(file.getFD());
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        devAdapter = "/dev/dvb/adapter" + adapter;
+        fdFrontend = LibC.x.open(devAdapter+ "/frontend0", LibC.O_RDWR);
+        if (fdFrontend == -1) {
+            C.errnoToException();
         }
     }
 
     @Override
     public void close() {
-        try {
-            file.close();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        if (LibC.x.close(fdFrontend) == -1) {
+            C.errnoToException();
         }
     }
 

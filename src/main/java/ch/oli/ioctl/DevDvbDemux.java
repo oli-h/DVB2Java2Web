@@ -1,32 +1,50 @@
 package ch.oli.ioctl;
 
-import java.io.Closeable;
-import java.io.FileDescriptor;
-import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
+import java.io.*;
 
 public class DevDvbDemux implements Closeable {
-
-    public final RandomAccessFile file;
     private final int fdDemux;
+    public DataInputStream file;
 
     protected DevDvbDemux(String devAdapter) {
-        try {
-            Field field = FileDescriptor.class.getDeclaredField("fd");
-            field.setAccessible(true);
-            file = new RandomAccessFile(devAdapter + "/demux0", "r");
-            fdDemux = (int) field.get(file.getFD());
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        fdDemux = LibC.x.open(devAdapter+ "/demux0", LibC.O_RDONLY);
+        if (fdDemux == -1) {
+            C.errnoToException();
         }
+        file = new DataInputStream(new InputStream() {
+            byte[] buffer = new byte[65536];
+
+            @Override
+            public int read() {
+                int numRead = LibC.x.read(fdDemux, buffer, 1);
+                if (numRead == -1) {
+                    C.errnoToException();
+                }
+                if (numRead == 0) {
+                    return -1;
+                }
+                return buffer[0] & 0xFF;
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                int numRead = LibC.x.read(fdDemux, buffer, Math.min(buffer.length, len));
+                if (numRead == -1) {
+                    C.errnoToException();
+                }
+                if (numRead == 0) {
+                    return -1;
+                }
+                System.arraycopy(buffer,0,b,off,numRead);
+                return numRead;
+            }
+        });
     }
 
     @Override
     public void close() {
-        try {
-            file.close();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        if (LibC.x.close(fdDemux) == -1) {
+            C.errnoToException();
         }
     }
 

@@ -288,7 +288,7 @@ public class C {
         }
     }
 
-    protected static void errnoToException() {
+    public static void errnoToException() {
         throw new RuntimeException("errno=" + Native.getLastError());
     }
 }
