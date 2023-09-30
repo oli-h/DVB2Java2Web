@@ -2,17 +2,17 @@ var dvbApp = angular.module('dvbApp', []);
 
 dvbApp.controller('IndexController', function IndexController($scope, $http, $timeout, $interval) {
     const index = this;
-    const nowSeconds = Date.now()/1000 ;
+    const nowSeconds = Date.now() / 1000;
 
     index.tuneParams = {
-        frequency  : 426000000,
-        symbol_rate:   6900000,
-        modulation : "QAM_64" ,
+        frequency: 426000000,
+        symbol_rate: 6900000,
+        modulation: "QAM_64",
     }
     index.tuneParams = {
-        frequency  : 338000000,
-        symbol_rate:   6900000,
-        modulation : "QAM_256" ,
+        frequency: 338000000,
+        symbol_rate: 6900000,
+        modulation: "QAM_256",
     }
 
     index.transportStreams = [];
@@ -25,17 +25,17 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     var ei4sMap = {};
     index.events = [];
 
-    index.tune = function() {
+    index.tune = function () {
         index.tuneResponse = "...";
-        $http.post("tune", index.tuneParams).then(function(resp) {
+        $http.post("tune", index.tuneParams).then(function (resp) {
             msgQueue = [];
             pmtMap = {};
             index.tuneResponse = resp.data;
-            if(resp.data.includes("LOCKED in")) {
-                $http.post("startPidReceiverIfNotYetStarted/0" ); // 0x00 PAT
+            if (resp.data.includes("LOCKED in")) {
+                $http.post("startPidReceiverIfNotYetStarted/0"); // 0x00 PAT
                 $http.post("startPidReceiverIfNotYetStarted/16"); // 0x16 NIT
                 $http.post("startPidReceiverIfNotYetStarted/17"); // 0x11 SDT
-//                $http.post("startPidReceiverIfNotYetStarted/18"); // 0x12 EIT
+                // $http.post("startPidReceiverIfNotYetStarted/18"); // 0x12 EIT
             }
         });
     }
@@ -51,10 +51,10 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
         ei4sMap = {};
     }
 
-    index.tuneTs = function(ts) {
-        index.tuneParams.frequency   = ts.frequency  ;
+    index.tuneTs = function (ts) {
+        index.tuneParams.frequency = ts.frequency;
         index.tuneParams.symbol_rate = ts.symbol_rate;
-        index.tuneParams.modulation  = ts.modulation ;
+        index.tuneParams.modulation = ts.modulation;
         index.tune();
     }
 
@@ -63,15 +63,14 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
         msgQueue.forEach(msg => {
             if (msg.type == "pmt") {
                 pmtMap[msg.service_id] = msg;
-            }
-            else if (msg.type == "eit") {
+            } else if (msg.type == "eit") {
                 var ei4s = ei4sMap[msg.service_id];
                 if (!ei4s) {
                     ei4s = ei4sMap[msg.service_id] = {
-                            service_id: msg.service_id,
-                            eiMap: {},
-                            eiList: []
-                        };
+                        service_id: msg.service_id,
+                        eiMap: {},
+                        eiList: []
+                    };
                 }
 
                 var ei = ei4s.eiMap[msg.event_id];
@@ -86,19 +85,17 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
                         ei.width = 2;
                     }
                 }
-            }
-            else if (msg.type == "sdt") {
+            } else if (msg.type == "sdt") {
                 serviceDescriptors[msg.service_id] = msg;
-            }
-            else if (msg.type == "transportStream") {
+            } else if (msg.type == "transportStream") {
                 var ts = index.transportStreams.find(el => {
-                    return el.network_id          == msg.network_id
+                    return el.network_id == msg.network_id
                         && el.transport_stream_id == msg.transport_stream_id
-                        && el.frequency           == msg.frequency
-                        && el.modulation          == msg.modulation
-                        && el.symbol_rate         == msg.symbol_rate
-                        && el.FEC_inner           == msg.FEC_inner
-                        && el.services.length     == msg.services.length
+                        && el.frequency == msg.frequency
+                        && el.modulation == msg.modulation
+                        && el.symbol_rate == msg.symbol_rate
+                        && el.FEC_inner == msg.FEC_inner
+                        && el.services.length == msg.services.length
                 });
                 if (!ts) {
                     index.transportStreams.push(msg);
@@ -144,6 +141,7 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
     }, 500);
 
     var ws = {};
+
     function ensureWebSocketConnected() {
         if (ws.readyState === WebSocket.OPEN) {
             return;
@@ -155,6 +153,7 @@ dvbApp.controller('IndexController', function IndexController($scope, $http, $ti
             msgQueue.push(msg);
         }
     }
+
     ensureWebSocketConnected();
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
