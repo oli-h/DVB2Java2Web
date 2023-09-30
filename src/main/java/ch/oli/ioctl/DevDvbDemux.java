@@ -35,7 +35,7 @@ public class DevDvbDemux implements Closeable {
                 if (numRead == 0) {
                     return -1;
                 }
-                System.arraycopy(buffer,0,b,off,numRead);
+                System.arraycopy(buffer, 0, b, off, numRead);
                 return numRead;
             }
         });
