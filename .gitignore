@@ -3,5 +3,6 @@ target/
 
 # JetBrains IDE
 .idea/
+*.iml
 
 /video.h264
