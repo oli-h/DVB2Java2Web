@@ -5,7 +5,7 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 
 public interface LibC extends Library {
-    LibC x = Native.load(null, LibC.class);
+    LibC x = Native.load("c",LibC.class);
 
     int O_RDONLY = 0;
     int O_WRONLY = 1;
