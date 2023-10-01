@@ -1,7 +1,6 @@
 package ch.oli.ioctl;
 
 import com.sun.jna.FromNativeContext;
-import com.sun.jna.Native;
 import com.sun.jna.NativeMapped;
 import com.sun.jna.Structure;
 
@@ -269,10 +268,10 @@ public class C {
         }
 
         if (dir == DIR.none && size > 0) {
-            throw new RuntimeException("Hm? buf.length shall be 0 when dir is  'none");
+            throw new RuntimeException("Hm? buf.length shall be 0 when dir is  'none'");
         }
         if (dir != DIR.none && size == 0) {
-            throw new RuntimeException("Hm? buf.length shall nto be 0 when dir is '" + dir + "");
+            throw new RuntimeException("Hm? buf.length shall not be 0 when dir is '" + dir + "'");
         }
 
         // see https://www.kernel.org/doc/html/latest/userspace-api/ioctl/ioctl-number.html
@@ -282,13 +281,6 @@ public class C {
         request = (request <<  8) | 'o'          ;
         request = (request <<  8) | nr           ;
 
-        int ioctl = LibC.x.ioctl(fd, request, value);
-        if (ioctl != 0) {
-            errnoToException();
-        }
-    }
-
-    public static void errnoToException() {
-        throw new RuntimeException("errno=" + Native.getLastError());
+        LibC.x.ioctl(fd, request, value);
     }
 }

@@ -8,18 +8,12 @@ public class DevDvbDemux implements Closeable {
 
     protected DevDvbDemux(String devAdapter) {
         fdDemux = LibC.x.open(devAdapter+ "/demux0", LibC.O_RDONLY);
-        if (fdDemux == -1) {
-            C.errnoToException();
-        }
         file = new DataInputStream(new InputStream() {
             byte[] buffer = new byte[65536];
 
             @Override
             public int read() {
                 int numRead = LibC.x.read(fdDemux, buffer, 1);
-                if (numRead == -1) {
-                    C.errnoToException();
-                }
                 if (numRead == 0) {
                     return -1;
                 }
@@ -29,9 +23,6 @@ public class DevDvbDemux implements Closeable {
             @Override
             public int read(byte[] b, int off, int len) throws IOException {
                 int numRead = LibC.x.read(fdDemux, buffer, Math.min(buffer.length, len));
-                if (numRead == -1) {
-                    C.errnoToException();
-                }
                 if (numRead == 0) {
                     return -1;
                 }
@@ -43,9 +34,7 @@ public class DevDvbDemux implements Closeable {
 
     @Override
     public void close() {
-        if (LibC.x.close(fdDemux) == -1) {
-            C.errnoToException();
-        }
+        LibC.x.close(fdDemux);
     }
 
     public void dmxSetBufferSize(long size) {

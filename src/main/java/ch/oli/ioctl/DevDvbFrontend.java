@@ -9,16 +9,11 @@ public class DevDvbFrontend implements Closeable {
     public DevDvbFrontend(int adapter) {
         devAdapter = "/dev/dvb/adapter" + adapter;
         fdFrontend = LibC.x.open(devAdapter+ "/frontend0", LibC.O_RDWR);
-        if (fdFrontend == -1) {
-            C.errnoToException();
-        }
     }
 
     @Override
     public void close() {
-        if (LibC.x.close(fdFrontend) == -1) {
-            C.errnoToException();
-        }
+        LibC.x.close(fdFrontend);
     }
 
     public dvb_frontend_info feGetInfo() {
