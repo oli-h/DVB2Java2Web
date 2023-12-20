@@ -69,7 +69,7 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
     tuneNext(1);
     tuneNext(2);
     tuneNext(3);
-    // tuneNext(4);
+    tuneNext(4);
 
     docsis.totalLoad = function() {
         var sumDocsis=0;

@@ -69,32 +69,35 @@ public class DvbTests {
         String resp = oc.tune(tuneParams, 1);
         System.out.println(resp);
 
-        Xxx avgPostTotalBit = new Xxx();
-        Xxx avgPostErrorBit = new Xxx();
+        Average postTotal = new Average();
+        Average postError = new Average();
+        Average errorBlock = new Average();
         long nextTick = System.currentTimeMillis() + 1000;
         while (true) {
             nextTick += 1000;
             Thread.sleep(nextTick - System.currentTimeMillis());
 
-            OliController.TuneStats tuneStats = oc.tuneStats(1);
-            avgPostTotalBit.update(tuneStats.postTotalBitCount);
-            avgPostErrorBit.update(tuneStats.postErrorBitCount);
+            OliController.TuneStats ts = oc.tuneStats(1);
+            postTotal.update(ts.postTotalBitCount);
+            postError.update(ts.postErrorBitCount);
+            errorBlock.update(ts.errorBlockCount);
 
-            System.out.printf("SNR=%.2f Signal=%.2f %sCARRIER%s %sLOCK%s %sSIGNAL%s %sINNER_STABLE%s %sSYNC%s postTotal=%.3f MBit/s postError=%.2f Bit/s\n",
-                    tuneStats.signalNoiceRatio_dBm,
-                    tuneStats.signalStrength_dBm,
-                    tuneStats.statusHasCarrier         ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
-                    tuneStats.statusHasLock            ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
-                    tuneStats.statusHasSignal          ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
-                    tuneStats.statusHasInnerCodeStable ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
-                    tuneStats.statusHasSync            ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
-                    avgPostTotalBit.avg / 1_000_000.0,
-                    avgPostErrorBit.avg
+            System.out.printf("SNR=%.2f Signal=%.2f postTotal=%.3f MBit/s postError=%.2f Bit/s errorBlock=%.2f %sCARRIER%s %sLOCK%s %sSIGNAL%s %sINNER_STABLE%s %sSYNC%s\n",
+                    ts.signalNoiceRatio_dBm,
+                    ts.signalStrength_dBm,
+                    postTotal.avg / 1_000_000.0,
+                    postError.avg,
+                    errorBlock.avg,
+                    ts.statusHasCarrier         ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
+                    ts.statusHasLock            ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
+                    ts.statusHasSignal          ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
+                    ts.statusHasInnerCodeStable ? ANSI.GREEN : ANSI.RED, ANSI.RESET,
+                    ts.statusHasSync            ? ANSI.GREEN : ANSI.RED, ANSI.RESET
             );
         }
     }
 
-    public static class Xxx {
+    public static class Average {
         private long prev = 0;
         public double avg = 0;
 

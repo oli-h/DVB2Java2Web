@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
@@ -229,7 +229,7 @@ public class OliController {
     }
 
     @GetMapping(value = "/sct/{pid}")
-    public void streamSections(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
+    public void streamSections(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, OutputStream os) {
         try (DevDvbDemux dmx = fe[adapter].openDemux()) {
             dmx.dmxSetBufferSize(256 * 1024);
 
@@ -239,15 +239,15 @@ public class OliController {
             filter.timeout = 1_000;
             dmx.dmxSetFilter(filter);
 
-            new DocsicDecoder(dmx, resp.getOutputStream()).decode();
+            new DocsicDecoder(dmx, os).decode();
 
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    @GetMapping(value = "/pes/{pid}")
-    public void stream(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, HttpServletResponse resp) {
+    @GetMapping(value = "/pes/{pid}", produces = "video/mpeg2video")
+    public void stream(@PathVariable int pid, @RequestParam(defaultValue = "1") int adapter, OutputStream os) {
         try (DevDvbDemux dmx = fe[adapter].openDemux()) {
             dmx.dmxSetBufferSize(256 * 1024);
 
@@ -260,10 +260,8 @@ public class OliController {
             filter.flags = dmx_sct_filter_params.DMX_IMMEDIATE_START;
             dmx.dmxSetPesFilter(filter);
 
-            resp.setContentType("video/mpeg2video");
-
 //            new DecodeTeletext().decode(dmx, resp.getOutputStream());
-            new Mpeg2videoDecoderNeu(dmx, resp.getOutputStream()).decode();
+            new Mpeg2videoDecoderNeu(dmx, os).decode();
 //            new H264Decoder(dmx, resp.getOutputStream()).decode();
 //            new DocsicDecoder(dmx, resp.getOutputStream()).decode();
 

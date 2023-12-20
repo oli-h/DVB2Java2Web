@@ -7,7 +7,7 @@ dvbApp.controller('TeletextController', function IndexController($http, $locatio
     var reader;
 
     teletext.start = () => {
-        fetch("pes/"+teletext.pid).then(resp => {
+        fetch("pes/" + teletext.pid).then(resp => {
             teletext.stop();
             reader = resp.body.getReader();
             reader.read().then(processChunk);
