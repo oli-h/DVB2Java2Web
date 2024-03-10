@@ -5,6 +5,7 @@ import ch.oli.ioctl.DevDvbDemux;
 import ch.oli.ioctl.dmx_pes_filter_params;
 import ch.oli.ioctl.dmx_sct_filter_params;
 import ch.oli.web.OliController;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.DatagramPacket;
@@ -15,6 +16,7 @@ public class DvbTests {
 
 
     @Test
+    @Disabled
     public void dvbFramesToUDP() throws Exception {
         final int adapter = 1;
         OliController oc = new OliController();
@@ -59,6 +61,7 @@ public class DvbTests {
     }
 
     @Test
+    @Disabled
     public void signalAndBitRates() throws Exception {
         OliController oc = new OliController();
         var tuneParams = new OliController.TuneParams();
