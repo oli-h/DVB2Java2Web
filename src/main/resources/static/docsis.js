@@ -3,21 +3,21 @@ var dvbApp = angular.module('dvbApp', []);
 dvbApp.controller('DocsisController', function DocsisController($scope, $http, $timeout, $interval) {
     const docsis = this;
     var freq;
-    var minFreq, maxFreq;
+    var mins = [0], maxs = [999];
 
-    docsis.rangeAll = function() {
-        minFreq = 122;
-        maxFreq = 866;
+    docsis.rangeAll = ()=> {
+        mins = [122];
+        maxs = [858];
+        // docsis.channels = [];
+    }
+    docsis.rangeTV = ()=> {
+        mins = [266, 834];
+        maxs = [434, 834];
         docsis.channels = [];
     }
-    docsis.rangeTV = function() {
-        minFreq = 122;
-        maxFreq = 458;
-        docsis.channels = [];
-    }
-    docsis.rangeDocsis = function() {
-        minFreq = 466;
-        maxFreq = 706;
+    docsis.rangeDocsis = ()=> {
+        mins = [122, 602, 842];
+        maxs = [250, 706, 842];
         docsis.channels = [];
     }
     docsis.rangeDocsis();
@@ -32,16 +32,32 @@ dvbApp.controller('DocsisController', function DocsisController($scope, $http, $
     }
 
     function tuneNext(adapter) {
-        if (freq >= minFreq && freq < maxFreq) {
-            freq += 8;
-        } else {
-            freq = minFreq
+        freq += 8;
+        for (let i = 0; i < mins.length; i++) {
+            if (freq < mins[i]) {
+                freq = mins[i];
+                break;
+            }
+            if (mins[i] <= freq && freq <= maxs[i]) {
+                break;
+            }
+            if (i == mins.length - 1) {
+                freq = mins[0];
+            }
         }
-        const tuneParams = { frequency: freq * 1000000, symbol_rate: 6900000, modulation: "QAM_256" }
-        if (freq >= 466 && freq <= 706) {
-            tuneParams.symbol_rate = 6952000;
-        } else if (freq === 426) {
-            tuneParams.modulation = "QAM_64";
+
+        // if (freq >= minFreq && freq < maxFreq) {
+        //     freq += 8;
+        // } else {
+        //     freq = minFreq
+        // }
+
+        const tuneParams = { frequency: freq * 1000000, symbol_rate: 6952000, modulation: "QAM_256" }
+        if ((freq >= 266 && freq <= 434) || freq === 834) {
+            tuneParams.symbol_rate = 6900000;
+            if (freq === 426) {
+                tuneParams.modulation = "QAM_64";
+            }
         }
         var channel = docsis.channels.find(c => c.frequency === tuneParams.frequency);
         if (!channel) {
